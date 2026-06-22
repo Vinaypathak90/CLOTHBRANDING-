@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Heart, ShoppingBag } from 'lucide-react'; // Added Heart & ShoppingBag Icons
+import { Menu, X, Heart, ShoppingBag } from 'lucide-react'; 
 import { CMSContext } from '../../context/CMSContext';
+import { WishlistContext } from '../../context/WishlistContext'; // 🔥 Step 1: Context validation loop binding
 
 const Navbar = () => {
   const { cmsConfig, loading } = useContext(CMSContext);
+  const { wishlistCount } = useContext(WishlistContext); // 🔥 Step 2: Destructured global reactive counter state
   const [imgFailed, setImgFailed] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -123,14 +125,24 @@ const Navbar = () => {
             className="hover:text-[var(--primary-accent)] transition-colors duration-300 relative group"
             aria-label="View Wishlist"
           >
-            <Heart size={18} strokeWidth={1.5} className="group-hover:scale-110 transition-transform duration-300" />
-            {/* Wishlist Counter Bubble Item - Connects dynamically to state later */}
-            <span 
-              style={{ backgroundColor: 'var(--primary-accent, #C9A84C)', color: 'var(--bg-luxury, #EFECE3)' }}
-              className="absolute -top-1.5 -right-2 text-[10px] font-bold font-body w-4 h-4 rounded-full flex items-center justify-center scale-90"
-            >
-              0
-            </span>
+            {/* 🔥 Heart icon shifts to corporate filled gold color natively if items count registry is true */}
+            <Heart 
+              size={18} 
+              strokeWidth={1.5} 
+              className={`group-hover:scale-110 transition-transform duration-300 ${
+                wishlistCount > 0 ? 'fill-[var(--primary-accent,#C9A84C)] text-[var(--primary-accent,#C9A84C)]' : ''
+              }`} 
+            />
+            
+            {/* 🔥 DYNAMIC BUBBLE BADGE: Fully operational using context state properties */}
+            {wishlistCount > 0 && (
+              <span 
+                style={{ backgroundColor: 'var(--primary-accent, #C9A84C)', color: 'var(--bg-luxury, #EFECE3)' }}
+                className="absolute -top-1.5 -right-2 text-[10px] font-bold font-body w-4 h-4 rounded-full flex items-center justify-center scale-90 animate-pulse shadow-xs"
+              >
+                {wishlistCount}
+              </span>
+            )}
           </Link>
 
           {/* Luxury Shopping Bag Component */}
@@ -141,7 +153,6 @@ const Navbar = () => {
             aria-label="View Shopping Bag"
           >
             <ShoppingBag size={18} strokeWidth={1.5} className="group-hover:scale-110 transition-transform duration-300" />
-            {/* Bag Counter Bubble Item - Connects dynamically to state later */}
             <span 
               style={{ backgroundColor: 'var(--text-luxury, #1A1A1A)', color: 'var(--bg-luxury, #EFECE3)' }}
               className="absolute -top-1.5 -right-2 text-[10px] font-bold font-body w-4 h-4 rounded-full flex items-center justify-center scale-90 border border-[var(--bg-luxury)]"

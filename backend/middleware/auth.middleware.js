@@ -32,4 +32,17 @@ const verifyClientToken = (req, res, next) => {
 	}
 };
 
-module.exports = { verifyAdminClearance, verifyClientToken };
+// User authentication middleware - verifies user is logged in
+const verifyUserAuth = (req, res, next) => {
+	try {
+		// Check if user is authenticated (from session, JWT, or auth middleware)
+		if (!req.user || !req.user.id) {
+			return res.status(401).json({ success: false, message: 'Authentication required.' });
+		}
+		next();
+	} catch (err) {
+		next(err);
+	}
+};
+
+module.exports = { verifyAdminClearance, verifyClientToken, verifyUserAuth };

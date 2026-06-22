@@ -37,7 +37,7 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
       logo_text, logo_image_url, accent_color_hex, bg_color_hex, text_color_hex, 
       navigation_menu, copyright_text, social_links,
       hero_eyebrow, hero_title_main, hero_title_highlight, hero_subtitle, 
-      hero_images, hero_cta_text_1, hero_cta_link_1, hero_cta_text_2, hero_cta_link_2
+      hero_images, hero_cta_text_1, hero_cta_link_1, hero_cta_text_2, hero_cta_link_2,features_list
     } = req.body;
 
     const updatePayload = {};
@@ -66,7 +66,7 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
     if (hero_cta_link_1 !== undefined) updatePayload.hero_cta_link_1 = hero_cta_link_1.trim();
     if (hero_cta_text_2 !== undefined) updatePayload.hero_cta_text_2 = hero_cta_text_2.trim();
     if (hero_cta_link_2 !== undefined) updatePayload.hero_cta_link_2 = hero_cta_link_2.trim();
-
+    if (features_list !== undefined) updatePayload.features_list = features_list;
     updatePayload.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

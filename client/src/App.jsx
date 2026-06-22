@@ -6,6 +6,7 @@ import { CMSContext } from './context/CMSContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import Wishlist from './pages/shop/Wishlist';
 
 // Premium Core Pages Mapping Layer
 import Home from './pages/shop/Home'; // 🔥 Step 1: Home page view ko yahan import kiya
@@ -38,10 +39,12 @@ export default function App() {
           <Routes>
             {/* REGISTERED COUTURE CORE HOME TERMINAL */}
             <Route path="/" element={<Home />} /> {/* 🔥 Step 2: Placeholder hata kar Home mount kar diya */}
-            
+            <Route path="/wishlist" element={<Wishlist />} />
             {/* Future shop views paths clusters yahan merge honge */}
           </Routes>
+
         </main>
+
         
         {/* GLOBAL SECURITY FOOTER LAYER */}
         <ErrorBoundary>

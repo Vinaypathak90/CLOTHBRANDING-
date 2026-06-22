@@ -1,22 +1,29 @@
 const router = require('express').Router();
-const { 
-  getPublicProducts, 
-  getProductDetailBySlug, 
-  adminCreateProduct, 
-  adminUpdateProduct, 
+const {
+  getPublicProducts,
+  getProductDetailBySlug,
+  adminCreateProduct,
+  adminUpdateProduct,
   adminDeleteProduct,
   adminGetFullCatalog
 } = require('../controllers/product.controller');
+
+// Import authentication security clear check blocks from your middleware path
 const { verifyAdminClearance } = require('../middleware/auth.middleware');
 
-// Public Pipeline Endpoints Context Map
-router.get('/', getPublicProducts);
-router.get('/profile/:slug', getProductDetailBySlug);
+// ==========================================
+// CLIENT FACING GATEWAYS (PUBLIC ACCESS PATHS)
+// ==========================================
+router.get('/shop-list', getPublicProducts);
+router.get('/detail/:slug', getProductDetailBySlug);
+router.get('/detail-by-id/:id', getProductDetailById);
 
-// High Security Admin Privilege Operations (CRM Engine Entry Points)
-router.get('/crm-inventory', verifyAdminClearance, adminGetFullCatalog);
-router.post('/crm-insert', verifyAdminClearance, adminCreateProduct);
-router.put('/crm-modify/:id', verifyAdminClearance, adminUpdateProduct);
-router.delete('/crm-purge/:id', verifyAdminClearance, adminDeleteProduct);
+// ==========================================
+// SECURE ADMISTRATIVE HOOKS (CRM CLEARANCE REQUIRED)
+// ==========================================
+router.get('/admin/catalog', verifyAdminClearance, adminGetFullCatalog);
+router.post('/admin/product-add', verifyAdminClearance, adminCreateProduct);
+router.put('/admin/product-update/:id', verifyAdminClearance, adminUpdateProduct);
+router.delete('/admin/product-delete/:id', verifyAdminClearance, adminDeleteProduct);
 
 module.exports = router;
