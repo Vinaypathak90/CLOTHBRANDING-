@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* ====================================================================
+   🔥 TAILWIND v4 CORE DESIGN THEME EXTENSIONS
+   ==================================================================== */
+@theme {
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Custom configuration utility color hooks mapping for layout selections */
+  --color-goldAccent: #C9A84C;
+  --color-darkLuxury: #1A1A1A;
+  --color-lightLuxury: #F5F5F0;
+}
+
+/* ====================================================================
+   ⚙️ PRODUCTION CORE BASE REGISTRY FALLBACKS
+   ==================================================================== */
+:root {
+  --primary-accent: #C9A84C;
+  --bg-luxury: #EFECE3;   /* Default Light Beige Base color token */
+  --text-luxury: #1A1A1A; /* Default Matte Dark Slate Typography color token */
+}
+
+/* Global viewport standardization layers */
+body {
+  background-color: var(--bg-luxury);
+  color: var(--text-luxury);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Luxury Editorial Headings Rule Mapping */
+h1, h2, h3, h4, h5, h6, .luxury-text {
+  font-family: var(--font-display);
+}
+
+/* ====================================================================
+   🎨 SMOOTH LUXURY EDITORIAL SCROLLBAR SYSTEM
+   ==================================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Blends seamlessly with your high couture cream background layout */
+::-webkit-scrollbar-track {
+  background: var(--bg-luxury);
+}
+
+/* Signature gold accent handle overlay */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary-accent) 0%, #B8941A 100%);
+  border-radius: 10px;
+  border: 2px solid var(--bg-luxury); /* Creates a premium padded space illusion around track */
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #E5C158 0%, var(--primary-accent) 100%);
+}
+
+/* Firefox Core standard backup controllers */
+* {
+  scrollbar-color: var(--primary-accent) var(--bg-luxury);
+  scrollbar-width: thin;
+}
+
+/* ====================================================================
+   🎬 GENERIC BACKUP GLOBAL KEYFRAME UTILITIES
+   ==================================================================== */
+@keyframes structuralFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: structuralFadeIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

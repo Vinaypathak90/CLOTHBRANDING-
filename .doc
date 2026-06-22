@@ -1,0 +1,64 @@
+preeti_clothing_brand/
+└── client/
+    ├── public/
+    │   └── favicon.ico           # Dynamic icon placeholder
+    ├── src/
+    │   ├── api/
+    │   │   └── axiosInstance.js  # Base configured Axios setup (Backend connection module)
+    │   ├── assets/               # Local images, video loops & placeholder banners
+    │   ├── components/
+    │   │   ├── admin/            # Admin CRM shared reusable widgets
+    │   │   │   ├── AdminSidebar.jsx
+    │   │   │   └── MetricCard.jsx
+    │   │   ├── common/           # Cross-cutting assets used everywhere
+    │   │   │   ├── Footer.jsx
+    │   │   │   ├── Navbar.jsx    # Transparent-to-solid signature sticky nav
+    │   │   │   ├── ProtectedRoute.jsx # Secure route guard (User vs Superadmin)
+    │   │   │   ├── SkeletonLoader.jsx # Smooth skeleton state animations
+    │   │   │   └── Toast.jsx      # Luxury pop-up alert system
+    │   │   └── shop/             # Customer shop interfaces widgets
+    │   │       ├── CartDrawer.jsx
+    │   │       ├── FilterSidebar.jsx
+    │   │       ├── ProductCard.jsx # Premium grid hover items cards
+    │   │       └── SizeGuideModal.jsx
+    │   ├── context/              # Context Matrix APIs for global application state
+    │   │   ├── AuthContext.jsx   # Client tokens & sessions controller
+    │   │   ├── CartContext.jsx   # Persistent guest & user shopping bags engine
+    │   │   ├── CMSContext.jsx    # Real-time database styles and text injector
+    │   │   └── WishlistContext.jsx
+    │   ├── hooks/                # Dynamic structural custom hooks
+    │   │   └── useScrollPosition.js # Track offsets for scrolling animations
+    │   ├── pages/                # Individual structured view layouts (Pages)
+    │   │   ├── admin/            # Secret administrative modules panel (Hidden interfaces)
+    │   │   │   ├── AdminDashboard.jsx  # Overview metrics charts window
+    │   │   │   ├── AnalyticsControl.jsx
+    │   │   │   ├── CategoryControl.jsx # Categories insert/delete manager
+    │   │   │   ├── CouponControl.jsx
+    │   │   │   ├── IdentityControl.jsx # Logo, theme color customization board
+    │   │   │   ├── InquiryControl.jsx  # Customer contact logs panel matching DB
+    │   │   │   ├── OrderControl.jsx    # Advanced fulfillment timeline modifier
+    │   │   │   └── ProductControl.jsx  # Dynamic variant inventory builder form
+    │   │   ├── auth/             # Authentication onboarding gateways
+    │   │   │   ├── AdminLogin.jsx # Hidden route verification gate
+    │   │   │   ├── ForgotPassword.jsx
+    │   │   │   ├── Login.jsx
+    │   │   │   └── Signup.jsx
+    │   │   ├── user/             # Secure private customer profile account views
+    │   │   │   ├── MyOrders.jsx
+    │   │   │   ├── ProfileSettings.jsx
+    │   │   │   └── Wishlist.jsx
+    │   │   └── shop/             # Public e-commerce fashion layout pages
+    │   │       ├── Cart.jsx
+    │   │       ├── Checkout.jsx  # Delivery details & Razorpay terminal gateway
+    │   │       ├── Contact.jsx   # Interactive contact desk layout with live maps
+    │   │       ├── Home.jsx      # High-end editorial landing viewport
+    │   │       ├── ProductDetail.jsx # Variant matrix matrix selections view
+    │   │       ├── Shop.jsx      # Infinite catalog listings grid
+    │   │       └── StaticPolicies.jsx # CMS governed terms, refunds & policies pages
+    │   ├── App.jsx               # Universal layout configuration matrix & route paths
+    │   ├── index.css             # Main styling layers & Google font imports
+    │   └── main.jsx              # Framework engine application hydrator
+    ├── index.html                # Main shell document file
+    ├── package.json              # Client libraries configurations manifest
+    ├── tailwind.config.js        # Color frameworks configuration bindings map
+    └── vite.config.js            # Vite compiler configuration file
