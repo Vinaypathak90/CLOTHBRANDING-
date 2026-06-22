@@ -4,6 +4,7 @@ const {
   getProductDetailBySlug,
   adminCreateProduct,
   adminUpdateProduct,
+   getProductDetailById,
   adminDeleteProduct,
   adminGetFullCatalog
 } = require('../controllers/product.controller');
