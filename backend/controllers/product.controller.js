@@ -1,5 +1,9 @@
 const { supabase } = require('../config/db');
 
+// ====================================================================
+// 🛠️ HELPER MATRIX LAYER (Internal Core Framework)
+// ====================================================================
+
 // Secure automatic slug formatting helper layer function
 const generateCleanSlug = (text) => {
   return text
@@ -52,28 +56,53 @@ exports.getPublicProducts = async (req, res, next) => {
   }
 };
 
-// 2. Fetch single descriptive product profile data matching unique slug index
-exports.getProductDetailBySlug = async (req, res, next) => {
+// 2. 🔥 MASTER DISPATCHER: AUTOMATICALLY SEPARATES NUMERIC ID FROM SLUGS
+exports.getProductDetailMasterDispatcher = async (req, res, next) => {
   try {
-    const { slug } = req.params;
-    const { data, error } = await supabase
-      .from('products')
-      .select('*, categories(id, name, slug)')
-      .eq('slug', slug.toLowerCase().trim())
-      .eq('is_hidden', false)
-      .single();
+    const { identifier } = req.params;
 
-    if (error || !data) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Requested design silhouette cannot be mapped within current active collections.' 
-      });
+    if (!identifier) {
+      return res.status(400).json({ success: false, message: 'Verification parameter identifier is mandatory.' });
     }
-    return res.status(200).json(data);
-  } catch (err) { 
-    next(err); 
+
+    // 🛡️ REGEX GUARD: Check if the identifier consists purely of numeric digits
+    const isNumericId = /^\d+$/.test(identifier);
+
+    if (isNumericId) {
+      console.log(`[ATELIER ENGINE]: Dispatching matching numerical ID row node: ${identifier}`);
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, categories(id, name, slug)')
+        .eq('id', Number(identifier))
+        .eq('is_hidden', false)
+        .maybeSingle();
+
+      if (error) return next(error);
+      if (!data) return res.status(404).json({ success: false, message: 'Product silhouette not found by ID.' });
+      
+      return res.status(200).json(data);
+
+    } else {
+      console.log(`[ATELIER ENGINE]: Dispatching matching alphanumeric string slug node: ${identifier}`);
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, categories(id, name, slug)')
+        .eq('slug', identifier.toLowerCase().trim())
+        .eq('is_hidden', false)
+        .maybeSingle();
+
+      if (error) return next(error);
+      if (!data) return res.status(404).json({ success: false, message: 'Product silhouette not found by Slug.' });
+      
+      return res.status(200).json(data);
+    }
+  } catch (err) {
+    next(err);
   }
 };
+
 
 // ====================================================================
 // 🛠️ ADMIN CRM OPERATIONS (SECURE ROUTES GATEWAY)
@@ -88,7 +117,6 @@ exports.adminCreateProduct = async (req, res, next) => {
       is_featured, is_bestseller, is_new_arrival, is_hidden, tags 
     } = req.body;
 
-    // Strict structural parameter integrity validation
     if (!name || !sku || !price || !cost_price) {
       return res.status(400).json({
         success: false,
@@ -107,9 +135,9 @@ exports.adminCreateProduct = async (req, res, next) => {
         description: description || '',
         images: images || [],
         category_id: category_id || null,
-        variants: variants || [],         // Structural JSONB variants tracking grid mapping
-        bullet_points: bullet_points || [], // Kostume County specifications matching setup
-        model_info: model_info || {},       // Formatted JSONB metadata metrics block
+        variants: variants || [],         
+        bullet_points: bullet_points || [], 
+        model_info: model_info || {},       
         price: parseFloat(price),
         cost_price: parseFloat(cost_price),
         discount_price: discount_price ? parseFloat(discount_price) : null,
@@ -142,7 +170,6 @@ exports.adminUpdateProduct = async (req, res, next) => {
     
     const sanitizedPayload = {};
     
-    // Explicit string formatting sanitizations mapping values array hooks
     if (updatePayload.name !== undefined) {
       sanitizedPayload.name = updatePayload.name.trim();
       if (!updatePayload.slug) sanitizedPayload.slug = generateCleanSlug(updatePayload.name);
@@ -151,20 +178,17 @@ exports.adminUpdateProduct = async (req, res, next) => {
     if (updatePayload.sku !== undefined) sanitizedPayload.sku = updatePayload.sku.toUpperCase().trim();
     if (updatePayload.description !== undefined) sanitizedPayload.description = updatePayload.description;
 
-    // Direct string numeric conversions metrics
     if (updatePayload.price !== undefined) sanitizedPayload.price = parseFloat(updatePayload.price);
     if (updatePayload.cost_price !== undefined) sanitizedPayload.cost_price = parseFloat(updatePayload.cost_price);
     if (updatePayload.discount_price !== undefined) {
       sanitizedPayload.discount_price = updatePayload.discount_price ? parseFloat(updatePayload.discount_price) : null;
     }
 
-    // Explicit bool conditions enforcement flags mappings
     if (updatePayload.is_featured !== undefined) sanitizedPayload.is_featured = !!updatePayload.is_featured;
     if (updatePayload.is_bestseller !== undefined) sanitizedPayload.is_bestseller = !!updatePayload.is_bestseller;
     if (updatePayload.is_new_arrival !== undefined) sanitizedPayload.is_new_arrival = !!updatePayload.is_new_arrival;
     if (updatePayload.is_hidden !== undefined) sanitizedPayload.is_hidden = !!updatePayload.is_hidden;
 
-    // Relational arrays object properties allocation
     if (updatePayload.images !== undefined) sanitizedPayload.images = updatePayload.images;
     if (updatePayload.variants !== undefined) sanitizedPayload.variants = updatePayload.variants;
     if (updatePayload.bullet_points !== undefined) sanitizedPayload.bullet_points = updatePayload.bullet_points;
@@ -226,28 +250,5 @@ exports.adminGetFullCatalog = async (req, res, next) => {
     return res.status(200).json(data);
   } catch (err) { 
     next(err); 
-  }
-};
-
-// 2b. Fetch single product by numeric id (public)
-exports.getProductDetailById = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { data, error } = await supabase
-      .from('products')
-      .select('*, categories(id, name, slug)')
-      .eq('id', id)
-      .eq('is_hidden', false)
-      .single();
-
-    if (error || !data) {
-      return res.status(404).json({
-        success: false,
-        message: 'Requested product cannot be found.'
-      });
-    }
-    return res.status(200).json(data);
-  } catch (err) {
-    next(err);
   }
 };

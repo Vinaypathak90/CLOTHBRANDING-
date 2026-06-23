@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Heart, ShoppingBag } from 'lucide-react'; 
 import { CMSContext } from '../../context/CMSContext';
-import { WishlistContext } from '../../context/WishlistContext'; // 🔥 Step 1: Context validation loop binding
+import { WishlistContext } from '../../context/WishlistContext'; 
+import { CartContext } from '../../context/CartContext'; 
 
 const Navbar = () => {
   const { cmsConfig, loading } = useContext(CMSContext);
-  const { wishlistCount } = useContext(WishlistContext); // 🔥 Step 2: Destructured global reactive counter state
+  const { wishlistCount } = useContext(WishlistContext);
+  const { cartCount } = useContext(CartContext); 
   const [imgFailed, setImgFailed] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -69,7 +71,7 @@ const Navbar = () => {
             HAUTE COUTURE BRAND IDENTITY (LOGO MODULE)
            ========================================== */}
         <Link to="/" className="flex items-center select-none z-50">
-            {!imgFailed && logoImage ? (
+          {!imgFailed && logoImage ? (
             <img
               src={logoImage}
               alt={logoText}
@@ -125,7 +127,6 @@ const Navbar = () => {
             className="hover:text-[var(--primary-accent)] transition-colors duration-300 relative group"
             aria-label="View Wishlist"
           >
-            {/* 🔥 Heart icon shifts to corporate filled gold color natively if items count registry is true */}
             <Heart 
               size={18} 
               strokeWidth={1.5} 
@@ -134,7 +135,6 @@ const Navbar = () => {
               }`} 
             />
             
-            {/* 🔥 DYNAMIC BUBBLE BADGE: Fully operational using context state properties */}
             {wishlistCount > 0 && (
               <span 
                 style={{ backgroundColor: 'var(--primary-accent, #C9A84C)', color: 'var(--bg-luxury, #EFECE3)' }}
@@ -153,12 +153,16 @@ const Navbar = () => {
             aria-label="View Shopping Bag"
           >
             <ShoppingBag size={18} strokeWidth={1.5} className="group-hover:scale-110 transition-transform duration-300" />
-            <span 
-              style={{ backgroundColor: 'var(--text-luxury, #1A1A1A)', color: 'var(--bg-luxury, #EFECE3)' }}
-              className="absolute -top-1.5 -right-2 text-[10px] font-bold font-body w-4 h-4 rounded-full flex items-center justify-center scale-90 border border-[var(--bg-luxury)]"
-            >
-              0
-            </span>
+            
+            {/* 🔥 FIXED OPTIMIZATION: Counter shifts to conditional dynamic render loop block */}
+            {cartCount > 0 && (
+              <span 
+                style={{ backgroundColor: 'var(--text-luxury, #1A1A1A)', color: 'var(--bg-luxury, #EFECE3)' }}
+                className="absolute -top-1.5 -right-2 text-[10px] font-bold font-body w-4 h-4 rounded-full flex items-center justify-center scale-90 border border-[var(--bg-luxury)] animate-pulse shadow-xs"
+              >
+                {cartCount}
+              </span>
+            )}
           </Link>
 
           {/* Responsive Interactive Hamburger Drawer Trigger */}
@@ -194,7 +198,6 @@ const Navbar = () => {
                   isActive(route.path) ? 'ps-3 border-l-2 font-semibold' : 'hover:ps-2'
                 }`}
                 onClick={() => setIsMenuOpen(false)}
-                styles={{ borderColor: 'var(--primary-accent, #C9A84C)' }}
               >
                 {route.label}
               </Link>

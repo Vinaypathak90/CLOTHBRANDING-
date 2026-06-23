@@ -8,17 +8,24 @@ const { connectDB } = require('./config/db');
 const { errorHandler } = require('./middleware/error.middleware');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
+// Centralized Routing System Modules Imports
+const authRoutes = require('./routes/auth.routes');
+const productRoutes = require('./routes/product.routes');
+const categoryRoutes = require('./routes/category.routes');
+const cmsRoutes = require('./routes/cms.routes');
+const couponRoutes = require('./routes/coupon.routes');
+const orderRoutes = require('./routes/order.routes');
+const inquiryRoutes = require('./routes/inquiry.routes');
+const cartRoutes = require('./routes/cart.routes');
+
 // Initialize Express Engine Matrix
 const app = express();
 
 // ==========================================
 // SECURITY & DEFENSIVE MIDDLEWARE
 // ==========================================
-
-// Helmet sets secure HTTP headers to mitigate scripting & injection vulnerabilities
 app.use(helmet());
 
-// Cross-Origin Resource Sharing configuration mapping client domain dynamically
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
@@ -26,11 +33,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Express body parsers handling large dynamic base64 inputs (e.g., Cloudinary uploads)
+// Body parsers handling dynamic allocations safely
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Apply rate limiting defense globally to all matching api route paths
+// Apply rate limiting defense globally to all matching api paths
 app.use('/api/', apiLimiter);
 
 // ==========================================
@@ -42,7 +49,7 @@ connectDB();
 // CORE API ROUTING MAP NAMESPACES
 // ==========================================
 
-// Base health check endpoint to verify server responsiveness status dynamically
+// Base health check endpoint
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -51,18 +58,19 @@ app.get('/api/v1/health', (req, res) => {
   });
 });
 
-// Primary application structural resource route hooks
-app.use('/api/auth', require('./routes/auth.routes'));
-app.use('/api/products', require('./routes/product.routes'));
-app.use('/api/categories', require('./routes/category.routes'));
-app.use('/api/cms', require('./routes/cms.routes'));
-app.use('/api/coupons', require('./routes/coupon.routes'));
-app.use('/api/orders', require('./routes/order.routes'));
-app.use('/api/inquiries', require('./routes/inquiry.routes'));
+// Primary application structural resource route hooks (Cleaned & De-duplicated)
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes); // 🔥 Clean singular allocation mapping
+app.use('/api/categories', categoryRoutes);
+app.use('/api/cms', cmsRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/inquiries', inquiryRoutes);
+app.use('/api/cart', cartRoutes);
+
 // ==========================================
-// FALLBACK 404 HANDLER (SAFE FOR MODERN NODE & EXPRESS)
+// FALLBACK 404 HANDLER
 // ==========================================
-// Hata diya gaya hai '*' string prefix jo crash kar raha tha
 app.use((req, res, next) => {
   const error = new Error(`Requested resource pipeline mapping failed for path: ${req.originalUrl}`);
   res.status(404);
@@ -85,7 +93,7 @@ const server = app.listen(PORT, () => {
   console.log(`===============================================================\n`);
 });
 
-// Process-level unhandled exception mitigation listeners to safeguard continuous stream execution loop
+// Process-level exception listeners
 process.on('unhandledRejection', (reason, promise) => {
   console.error(`[CRITICAL SYSTEM REJECTION]: Unhandled promise tracking alert:`, reason);
 });

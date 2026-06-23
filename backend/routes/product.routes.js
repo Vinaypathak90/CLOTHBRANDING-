@@ -1,26 +1,30 @@
 const router = require('express').Router();
 const {
   getPublicProducts,
-  getProductDetailBySlug,
   adminCreateProduct,
   adminUpdateProduct,
-   getProductDetailById,
   adminDeleteProduct,
-  adminGetFullCatalog
+  adminGetFullCatalog,
+  getProductDetailMasterDispatcher // 🔥 Naya Master function import kiya
 } = require('../controllers/product.controller');
 
-// Import authentication security clear check blocks from your middleware path
+// Import authentication security clear check blocks from middleware path
 const { verifyAdminClearance } = require('../middleware/auth.middleware');
 
 // ==========================================
 // CLIENT FACING GATEWAYS (PUBLIC ACCESS PATHS)
 // ==========================================
+
+// Route A: Catalog listing queries (Matches: /api/products/shop-list)
 router.get('/shop-list', getPublicProducts);
-router.get('/detail/:slug', getProductDetailBySlug);
-router.get('/detail-by-id/:id', getProductDetailById);
+
+// Route B: 🔥 CLEAN UNIFIED PATHWAY (No more path-to-regexp crashes!)
+// Yeh single route numbers (ID) aur strings (Slug) dono ke inputs dynamically accept karega
+router.get('/detail/:identifier', getProductDetailMasterDispatcher);
+
 
 // ==========================================
-// SECURE ADMISTRATIVE HOOKS (CRM CLEARANCE REQUIRED)
+// SECURE ADMINISTRATIVE HOOKS (CRM CLEARANCE REQUIRED)
 // ==========================================
 router.get('/admin/catalog', verifyAdminClearance, adminGetFullCatalog);
 router.post('/admin/product-add', verifyAdminClearance, adminCreateProduct);

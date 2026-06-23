@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import axiosInstance from '../../api/axiosInstance'; // Centralized interceptor pipeline 
 import { Plus, X, ChevronRight, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { WishlistContext } from '../../context/WishlistContext'; // Context consumed flawlessly
-
+import { CartContext } from '../../context/CartContext';
 export default function ProductCollection() {
   // ====================================================================
   // CONSUMING GLOBAL WISHLIST ENGINE HOOKS
   // ====================================================================
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
-  
+  const { addToCart } = useContext(CartContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(6); // 6 Items per batch loading setup
@@ -310,7 +310,13 @@ export default function ProductCollection() {
 
                 {/* Action CTA Pipeline Controls */}
                 <div className="flex flex-col gap-3 mt-4">
-                  <button className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] transition-all duration-400 hover:bg-[#1a1a1a] hover:text-white rounded-md shadow-xs">
+                  <button 
+                    onClick={() => {
+                      addToCart(selectedProduct, selectedSize, 1);
+                      setSelectedProduct(null); // Amazon Strategy: Close modal view smoothly upon addition success
+                    }}
+                    className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] transition-all duration-400 hover:bg-[#1a1a1a] hover:text-white rounded-md shadow-xs"
+                  >
                     ADD TO CART
                   </button>
                   <button className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 bg-[#b5862a] text-white transition-all duration-400 hover:bg-[#9c711f] shadow-md rounded-md">

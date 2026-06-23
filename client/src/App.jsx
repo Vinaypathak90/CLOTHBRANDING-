@@ -7,7 +7,8 @@ import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Wishlist from './pages/shop/Wishlist';
-
+import Cart from './pages/shop/Cart'; // 🔥 Step 1: Cart page view import kiya
+import ProductDetails from './pages/shop/ProductDetails';
 // Premium Core Pages Mapping Layer
 import Home from './pages/shop/Home'; // 🔥 Step 1: Home page view ko yahan import kiya
 
@@ -40,6 +41,8 @@ export default function App() {
             {/* REGISTERED COUTURE CORE HOME TERMINAL */}
             <Route path="/" element={<Home />} /> {/* 🔥 Step 2: Placeholder hata kar Home mount kar diya */}
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/shop/product/:id" element={<ProductDetails />} />
             {/* Future shop views paths clusters yahan merge honge */}
           </Routes>
 
