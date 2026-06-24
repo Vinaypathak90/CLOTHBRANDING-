@@ -1,48 +1,38 @@
-// Simple admin clearance middleware
-// This checks for `req.user` and a `role` of 'superadmin'.
-// In production, wire this to your authentication/session layer.
+const jwt = require('jsonwebtoken');
 
-const verifyAdminClearance = (req, res, next) => {
-	try {
-		// If authentication middleware isn't populating req.user yet,
-		// allow through for now in local development. Adjust as needed.
-		if (!req.user) {
-			return res.status(401).json({ message: 'Authentication required.' });
-		}
+// Verifies standard shop users
+exports.verifyUserAuth = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Authentication required. No token provided.' });
+    }
 
-		if (req.user.role !== 'superadmin') {
-			return res.status(403).json({ message: 'Access Denied: Insufficient privileges.' });
-		}
-
-		next();
-	} catch (err) {
-		next(err);
-	}
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Attach user payload to request
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Session expired or invalid token.' });
+  }
 };
 
-// Minimal client token verifier used for protected client routes
-const verifyClientToken = (req, res, next) => {
-	try {
-		if (!req.user) {
-			return res.status(401).json({ message: 'Authentication required.' });
-		}
-		next();
-	} catch (err) {
-		next(err);
-	}
-};
+// Verifies Admin CRM clearance
+exports.verifyAdminClearance = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Admin clearance required.' });
+    }
 
-// User authentication middleware - verifies user is logged in
-const verifyUserAuth = (req, res, next) => {
-	try {
-		// Check if user is authenticated (from session, JWT, or auth middleware)
-		if (!req.user || !req.user.id) {
-			return res.status(401).json({ success: false, message: 'Authentication required.' });
-		}
-		next();
-	} catch (err) {
-		next(err);
-	}
-};
+    const decoded = jwt.verify(token, process.env.JWT_ADMIN_SECRET);
+    
+    if (decoded.role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Unauthorized system access.' });
+    }
 
-module.exports = { verifyAdminClearance, verifyClientToken, verifyUserAuth };
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Admin session expired or invalid.' });
+  }
+};

@@ -1,34 +1,39 @@
 const router = require('express').Router();
-const {
-  getPublicProducts,
-  adminCreateProduct,
-  adminUpdateProduct,
-  adminDeleteProduct,
-  adminGetFullCatalog,
-  getProductDetailMasterDispatcher // 🔥 Naya Master function import kiya
-} = require('../controllers/product.controller');
 
-// Import authentication security clear check blocks from middleware path
-const { verifyAdminClearance } = require('../middleware/auth.middleware');
+// 🔥 THE FIX: Import the entire controller object instead of destructuring.
+// This prevents the "silent skip undefined" bug in Express.
+const productController = require('../controllers/product.controller');
 
-// ==========================================
-// CLIENT FACING GATEWAYS (PUBLIC ACCESS PATHS)
-// ==========================================
+// ====================================================================
+// 🚨 STARTUP SANITY CHECK (Terminal mein batayega agar koi function miss hua)
+// ====================================================================
+if (!productController.adminGetFullCatalog) {
+    console.error("❌ CRITICAL ERROR: 'adminGetFullCatalog' is MISSING in product.controller.js!");
+}
+if (!productController.getProductById) {
+    console.error("❌ CRITICAL ERROR: 'getProductById' is MISSING in product.controller.js!");
+}
 
-// Route A: Catalog listing queries (Matches: /api/products/shop-list)
-router.get('/shop-list', getPublicProducts);
+// ====================================================================
+// 👑 EXACT MATCH ROUTES (MUST BE AT THE VERY TOP)
+// ====================================================================
+// Ab Express inko skip nahi kar payega!
+router.get('/all-catalog', productController.adminGetFullCatalog);
+router.get('/shop-list', productController.getPublicProducts);
 
-// Route B: 🔥 CLEAN UNIFIED PATHWAY (No more path-to-regexp crashes!)
-// Yeh single route numbers (ID) aur strings (Slug) dono ke inputs dynamically accept karega
-router.get('/detail/:identifier', getProductDetailMasterDispatcher);
+// ====================================================================
+// 🛠️ ADMINISTRATIVE MUTATIONS
+// ====================================================================
+router.post('/create', productController.adminCreateProduct);
+router.put('/update/:id', productController.adminUpdateProduct);
+router.delete('/delete/:id', productController.adminDeleteProduct);
 
+// ====================================================================
+// ⚠️ DYNAMIC WILDCARD ROUTES (MUST BE AT THE VERY BOTTOM)
+// ====================================================================
+router.get('/detail/:identifier', productController.getProductDetailMasterDispatcher);
 
-// ==========================================
-// SECURE ADMINISTRATIVE HOOKS (CRM CLEARANCE REQUIRED)
-// ==========================================
-router.get('/admin/catalog', verifyAdminClearance, adminGetFullCatalog);
-router.post('/admin/product-add', verifyAdminClearance, adminCreateProduct);
-router.put('/admin/product-update/:id', verifyAdminClearance, adminUpdateProduct);
-router.delete('/admin/product-delete/:id', verifyAdminClearance, adminDeleteProduct);
+// 🔥 Yeh route sabse aakhri mein hi rehna chahiye!
+router.get('/:id', productController.getProductById);
 
 module.exports = router;

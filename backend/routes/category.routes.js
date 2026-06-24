@@ -4,7 +4,8 @@ const {
   getCategoryBySlug,
   adminCreateCategory,
   adminUpdateCategory,
-  adminDeleteCategory
+  adminDeleteCategory,
+  getAllCategories
 } = require('../controllers/category.controller');
 const { verifyAdminClearance } = require('../middleware/auth.middleware');
 
@@ -16,5 +17,5 @@ router.get('/profile/:slug', getCategoryBySlug);
 router.post('/crm-insert', verifyAdminClearance, adminCreateCategory);
 router.put('/crm-modify/:id', verifyAdminClearance, adminUpdateCategory);
 router.delete('/crm-purge/:id', verifyAdminClearance, adminDeleteCategory);
-
+router.get('/list', getAllCategories);
 module.exports = router;

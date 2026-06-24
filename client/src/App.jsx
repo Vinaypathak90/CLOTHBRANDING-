@@ -6,12 +6,20 @@ import { CMSContext } from './context/CMSContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import Wishlist from './pages/shop/Wishlist';
-import Cart from './pages/shop/Cart'; // 🔥 Step 1: Cart page view import kiya
-import ProductDetails from './pages/shop/ProductDetails';
-// Premium Core Pages Mapping Layer
-import Home from './pages/shop/Home'; // 🔥 Step 1: Home page view ko yahan import kiya
+import ProtectedRoute from './components/common/ProtectedRoute'; // 🔥 Step 1: Guard import kiya
 
+// Premium Core Pages Mapping Layer
+import Home from './pages/shop/Home';
+import Wishlist from './pages/shop/Wishlist';
+import Cart from './pages/shop/Cart'; 
+import ProductDetails from './pages/shop/ProductDetails';
+import AuthPage from './pages/auth/AuthPage'; // 🔥 Step 2: Auth page import kiya
+import Checkout from './pages/shop/Checkout';
+import ProfilePage from './pages/shop/ProfilePage';
+import CollectionsPage from './pages/shop/CollectionsPage';
+import AdminCMSDashboard from './pages/admin/AdminCMSDashboard';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminProductDashboard from './pages/admin/AdminProductDashboard';
 export default function App() {
   const { loading: cmsLoading } = useContext(CMSContext);
 
@@ -38,16 +46,49 @@ export default function App() {
         {/* pt-[92px] padding alignment ensure karta hai ki dynamic content fixed navbar ke neeche push ho */}
         <main className="flex-grow pt-[92px]">
           <Routes>
-            {/* REGISTERED COUTURE CORE HOME TERMINAL */}
-            <Route path="/" element={<Home />} /> {/* 🔥 Step 2: Placeholder hata kar Home mount kar diya */}
+            
+            {/* ========================================== */}
+            {/* 🌍 PUBLIC ROUTES (Access to everyone) */}
+            {/* ========================================== */}
+            <Route path="/" element={<Home />} /> 
+            <Route path="/shop/product/:id" element={<ProductDetails />} />
+            <Route path="/auth" element={<AuthPage />} /> {/* 🔥 Login/Signup entry portal */}
+
+            {/* ========================================== */}
+            {/* 🔒 PRIVATE ROUTES (Only Logged-in Users) */}
+            {/* ========================================== */}
+            {/* Make Wishlist and Cart public views — allow browsing without login */}
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/cart" element={<Cart />} />
-            <Route path="/shop/product/:id" element={<ProductDetails />} />
+{/* 🔥 Step 2: Profile Page Gateway Wrapped Securely under ProtectedRoute */}
+            <Route 
+              path="/profile" 
+              element = {
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+            {/* Checkout requires authentication */}
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/collections" element={<CollectionsPage />} />
+            
+            <Route path="/admin/cms-control" element={<AdminCMSDashboard />} />
+            <Route path="/admin/product-control" element={<AdminProductDashboard />} />
+            <Route path="/designer-studio-gate" element={<AdminLogin />} />
+            <Route path="/admin/products-control" element={<AdminProductDashboard />} />
+
             {/* Future shop views paths clusters yahan merge honge */}
           </Routes>
-
+          
         </main>
-
         
         {/* GLOBAL SECURITY FOOTER LAYER */}
         <ErrorBoundary>

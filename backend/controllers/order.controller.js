@@ -69,7 +69,7 @@ exports.getOrderTrackingPipeline = async (req, res, next) => {
       .single();
 
     if (error || !order) {
-      return res.status(404).json({ message: 'Requested order footprint cannot be mapped within logistics networks.' });
+      return res.status(404).json({ success: false, message: 'Requested order footprint cannot be mapped within logistics networks.' });
     }
 
     return res.status(200).json(order);
@@ -90,11 +90,36 @@ exports.getClientOrderHistory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// 4. FETCH PROFILE EXECUTED ORDERS (Natively feeds the Profile Dashboard Viewport)
+exports.getMyOrders = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    console.log(`[ATELIER ENGINE]: Hydrating historic purchase grids for user node: ${userId}`);
+
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("❌ [SUPABASE HISTORY ERROR]:", error.message);
+      return next(error);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders: orders
+    });
+  } catch (err) { next(err); }
+};
+
 // ==========================================
 // ADMIN CRM OPERATIONS (SECURE CONTROL PANEL)
 // ==========================================
 
-// 4. Admin Module: Master query pipeline execution to audit all incoming operations state logs
+// 5. Admin Module: Master query pipeline execution to audit all incoming operations state logs
 exports.adminGetAllOrdersDashboard = async (req, res, next) => {
   try {
     const { statusFilter } = req.query;
@@ -111,7 +136,7 @@ exports.adminGetAllOrdersDashboard = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 5. Admin Module: Advance pipeline steps and inject historical entries into the JSONB array
+// 6. Admin Module: Advance pipeline steps and inject historical entries into the JSONB array
 exports.adminMutateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -157,7 +182,7 @@ exports.adminMutateOrderStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 6. Admin Module: Allocate courier agent parameters
+// 7. Admin Module: Allocate courier agent parameters
 exports.adminAssignCourierAgent = async (req, res, next) => {
   try {
     const { orderId, courierAgentId } = req.body;

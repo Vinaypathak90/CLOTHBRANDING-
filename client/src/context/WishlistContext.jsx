@@ -6,30 +6,46 @@ export const WishlistContext = createContext();
 export const WishlistProvider = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState([]);
 
-  // 1. Fetch entire wishlist on mount securely
+  // Helper utility to dynamically compute defensive request headers configuration vectors
+  const getRequestConfig = () => {
+    const config = { headers: {} };
+    const guestId = localStorage.getItem('gst_wish_id');
+    if (guestId && guestId !== 'undefined' && guestId !== 'null') {
+      config.headers['x-guest-uuid'] = guestId;
+    }
+    return config;
+  };
+
+  // 1. Fetch entire wishlist dynamically for both verified clients & guests
   const fetchWishlist = async () => {
     try {
       const token = localStorage.getItem('usr_tk') || localStorage.getItem('adm_tk');
-      if (!token) {
-        // Load local wishlist when user is not authenticated
-        const stored = localStorage.getItem('local_wishlist');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            setWishlistItems(parsed);
-          } catch (e) {
-            setWishlistItems([]);
-          }
-        }
-        return;
+      const guestId = localStorage.getItem('gst_wish_id');
+      
+      // Dynamic query payload binding parameters setup
+      let urlPath = '/wishlist/my-list';
+      if (!token && guestId) {
+        urlPath += `?guestUuid=${guestId}`;
       }
 
-      const res = await axiosInstance.get('/wishlist/my-list');
-      if (res.data.success) {
-        setWishlistItems(res.data.data);
+      const res = await axiosInstance.get(urlPath, getRequestConfig());
+      
+      if (res.data?.success && Array.isArray(res.data.wishlist)) {
+        // Normalize the database structures layout array down to standalone product vectors cleanly
+        const normalizedProducts = res.data.wishlist
+          .map(item => item.products || item.product)
+          .filter(Boolean);
+        
+        setWishlistItems(normalizedProducts);
       }
     } catch (err) {
-      console.error("Error retrieving wishlist via centralized registry:", err);
+      console.error("❌ [WISHLIST CONTEXT FETCH FAULT]: Centralized sync ledger execution failed:", err);
+      
+      // Standalone safe backup: Fallback to local storage if API node throws structural network errors
+      const backupStored = localStorage.getItem('local_wishlist');
+      if (backupStored) {
+        try { setWishlistItems(JSON.parse(backupStored)); } catch (e) { setWishlistItems([]); }
+      }
     }
   };
 
@@ -37,11 +53,10 @@ export const WishlistProvider = ({ children }) => {
     fetchWishlist();
   }, []);
 
-  // Accept either a full product object or a productId (string/number)
+  // 2. Main Toggle Action Handler Map (Supports full object payloads or numerical IDs seamlessly)
   const toggleWishlist = async (productOrId) => {
     if (!productOrId) return;
 
-    // Normalize to productId and optional product object
     let productId;
     let productObj = null;
 
@@ -54,73 +69,75 @@ export const WishlistProvider = ({ children }) => {
 
     if (!productId) return;
 
-    // If user is not authenticated, use localStorage-backed wishlist (local UX)
-    const token = localStorage.getItem('usr_tk') || localStorage.getItem('adm_tk');
-    if (!token) {
-      const itemExists = wishlistItems.some(i => String(i.id || i._id) === String(productId));
-      if (itemExists) {
-        // remove locally
-        setWishlistItems((prev) => {
-          const next = prev.filter(item => String(item.id || item._id) !== String(productId));
-          localStorage.setItem('local_wishlist', JSON.stringify(next));
-          return next;
-        });
-        return;
-      } else {
-        const toAdd = productObj ? productObj : { id: productId };
-        setWishlistItems((prev) => {
-          const next = [...prev, toAdd];
-          localStorage.setItem('local_wishlist', JSON.stringify(next));
-          return next;
-        });
-        return;
-      }
-    }
-
     try {
-      const res = await axiosInstance.post('/wishlist/toggle', { productId });
+      const currentGuestId = localStorage.getItem('gst_wish_id');
+      const payloadBody = { 
+        productId, 
+        guestUuid: currentGuestId !== 'undefined' ? currentGuestId : null 
+      };
 
-      if (res.data.success) {
+      const res = await axiosInstance.post('/wishlist/toggle', payloadBody, getRequestConfig());
+
+      if (res.data?.success) {
+        // 🛡️ SECURITY MEMORY LAYER HANDSHAKE: If server assigned a new tracking UUID vector, lock it instantly
+        if (res.data?.guestUuid) {
+          localStorage.setItem('gst_wish_id', res.data.guestUuid);
+        }
+
         if (res.data.action === 'added') {
-          // If we have the full product object use it; otherwise create a minimal placeholder with id
-          if (productObj) {
-            setWishlistItems((prev) => {
-              if (prev.some(i => String(i.id) === String(productId) || String(i._id) === String(productId))) return prev;
-              return [...prev, productObj];
-            });
-          } else {
-            // fetch full product details from server by id to populate UI
-            try {
-              const prodRes = await axiosInstance.get(`/products/detail-by-id/${productId}`);
-              const fetched = prodRes.data;
-              const itemToAdd = fetched ? fetched : { id: productId };
-              setWishlistItems((prev) => {
-                if (prev.some(i => String(i.id) === String(productId) || String(i._id) === String(productId))) return prev;
-                return [...prev, itemToAdd];
-              });
-            } catch (fetchErr) {
-              // fallback to minimal placeholder if fetch fails
-              setWishlistItems((prev) => {
-                if (prev.some(i => String(i.id) === String(productId) || String(i._id) === String(productId))) return prev;
-                return [...prev, { id: productId }];
-              });
-            }
-          }
+          // Explicit target append mutation logic execution
+          const targetItemToAdd = productObj || res.data.data || { id: productId };
+          
+          setWishlistItems((prev) => {
+            const exists = prev.some(i => String(i.id || i._id) === String(productId));
+            if (exists) return prev;
+            const updated = [...prev, targetItemToAdd];
+            localStorage.setItem('local_wishlist', JSON.stringify(updated));
+            return updated;
+          });
         } else {
-          setWishlistItems((prev) => prev.filter(item => String(item.id || item._id) !== String(productId)));
+          // Explicit remove allocation sequence loop trigger
+          setWishlistItems((prev) => {
+            const updated = prev.filter(item => String(item.id || item._id) !== String(productId));
+            localStorage.setItem('local_wishlist', JSON.stringify(updated));
+            return updated;
+          });
         }
       }
     } catch (err) {
-      console.error("Failed to toggle wishlist item:", err);
+      console.error("❌ [WISHLIST CONTEXT TOGGLE FAULT]: Mutation sequence loop failed. Deploying local state fallback updates:", err);
+      
+      // OPTIMISTIC LOCAL DESCENT RECOVERY: Keeps app interactive even if remote engine drops connection
+      const itemExists = wishlistItems.some(i => String(i.id || i._id) === String(productId));
+      setWishlistItems((prev) => {
+        let nextState;
+        if (itemExists) {
+          nextState = prev.filter(item => String(item.id || item._id) !== String(productId));
+        } else {
+          const fallbackPlaceholder = productObj ? productObj : { id: productId };
+          nextState = [...prev, fallbackPlaceholder];
+        }
+        localStorage.setItem('local_wishlist', JSON.stringify(nextState));
+        return nextState;
+      });
     }
   };
 
+  // 3. Status Watcher: String comparison check layer mapping values safely across frameworks layout monitors
   const isInWishlist = (productId) => {
-    return wishlistItems.some(item => Number(item.id) === Number(productId));
+    if (!productId) return false;
+    return wishlistItems.some(item => String(item.id || item._id) === String(productId));
   };
 
+  
   return (
-    <WishlistContext.Provider value={{ wishlist: wishlistItems, wishlistCount: wishlistItems.length, toggleWishlist, isInWishlist }}>
+    <WishlistContext.Provider value={{ 
+      wishlist: wishlistItems, 
+      wishlistCount: wishlistItems.length, 
+      toggleWishlist, 
+      isInWishlist,
+      refreshWishlist: fetchWishlist 
+    }}>
       {children}
     </WishlistContext.Provider>
   );

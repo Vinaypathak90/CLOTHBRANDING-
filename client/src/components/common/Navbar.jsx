@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Heart, ShoppingBag } from 'lucide-react'; 
+import { Menu, X, Heart, ShoppingBag, User } from 'lucide-react'; 
 import { CMSContext } from '../../context/CMSContext';
 import { WishlistContext } from '../../context/WishlistContext'; 
 import { CartContext } from '../../context/CartContext'; 
+import { AuthContext } from '../../context/AuthContext';
 
 const Navbar = () => {
   const { cmsConfig, loading } = useContext(CMSContext);
   const { wishlistCount } = useContext(WishlistContext);
   const { cartCount } = useContext(CartContext); 
+  const { currentUser, logoutUser } = useContext(AuthContext);
   const [imgFailed, setImgFailed] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -145,6 +147,47 @@ const Navbar = () => {
             )}
           </Link>
 
+          {/* Profile / Auth Link */}
+          {currentUser ? (
+            <div className="relative group">
+              <button 
+                className="flex items-center gap-2 cursor-pointer"
+                style={{ color: 'var(--text-luxury, #1A1A1A)' }}
+                aria-label="User Account"
+              >
+                <User size={18} strokeWidth={1.5} />
+                <span className="hidden md:inline text-sm font-medium tracking-wide">{currentUser.name || currentUser.email}</span>
+              </button>
+              <div 
+                style={{ backgroundColor: 'var(--bg-luxury, #EFECE3)', borderColor: 'rgba(26,26,26,0.1)' }}
+                className="absolute top-full right-0 mt-4 w-56 rounded-md shadow-lg py-2 opacity-0 group-hover:opacity-100 transition-all duration-300 invisible group-hover:visible z-10 border transform-gpu group-hover:translate-y-0 translate-y-2"
+              >
+                <div className="px-4 py-2 border-b border-black/5">
+                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-luxury, #1A1A1A)' }}>{currentUser.name}</p>
+                    <p className="text-xs text-neutral-500 truncate">{currentUser.email}</p>
+                </div>
+                <div className="py-1">
+                    <Link to="/user/profile" className="block px-4 py-2 text-sm hover:bg-black/5" style={{ color: 'var(--text-luxury, #1A1A1A)' }}>My Profile</Link>
+                    <Link to="/user/orders" className="block px-4 py-2 text-sm hover:bg-black/5" style={{ color: 'var(--text-luxury, #1A1A1A)' }}>Order History</Link>
+                </div>
+                <div className="h-[1px] bg-black/5 mx-2"></div>
+                <button onClick={logoutUser} className="w-full text-left block px-4 py-2 text-sm hover:bg-black/5" style={{ color: 'var(--text-luxury, #1A1A1A)' }}>
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Link 
+              to="/auth" 
+              style={{ color: 'var(--text-luxury, #1A1A1A)' }}
+              className="hover:text-[var(--primary-accent)] transition-colors duration-300 group flex items-center gap-2"
+              aria-label="Login or Signup"
+            >
+              <User size={18} strokeWidth={1.5} className="group-hover:scale-110 transition-transform duration-300" />
+              <span className="hidden md:inline text-sm font-medium tracking-wide">Login / Signup</span>
+            </Link>
+          )}
+
           {/* Luxury Shopping Bag Component */}
           <Link 
             to="/cart" 
@@ -204,6 +247,36 @@ const Navbar = () => {
             </li>
           ))}
         </ul>
+        <div className="max-w-md mx-auto mt-8 border-t border-neutral-900/10 pt-8">
+          {currentUser ? (
+              <div className="flex flex-col gap-7 text-left">
+                <Link
+                  to="/user/profile"
+                  style={{ color: isActive('/user/profile') ? 'var(--primary-accent, #C9A84C)' : 'var(--text-luxury, #1A1A1A)'}}
+                  className={`text-lg font-medium tracking-[0.15em] uppercase font-display block transition-all duration-250 ${isActive('/user/profile') ? 'ps-3 border-l-2 font-semibold' : 'hover:ps-2'}`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Account
+                </Link>
+                <button
+                  onClick={() => { logoutUser(); setIsMenuOpen(false); }}
+                  style={{ color: 'var(--text-luxury, #1A1A1A)' }}
+                  className="text-lg text-left w-full font-medium tracking-[0.15em] uppercase font-display block transition-all duration-250 hover:ps-2"
+                >
+                  Logout
+                </button>
+              </div>
+          ) : (
+            <Link
+              to="/auth"
+              style={{ color: isActive('/auth') ? 'var(--primary-accent, #C9A84C)' : 'var(--text-luxury, #1A1A1A)'}}
+              className={`text-lg font-medium tracking-[0.15em] uppercase font-display block transition-all duration-250 ${isActive('/auth') ? 'ps-3 border-l-2 font-semibold' : 'hover:ps-2'}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Login / Signup
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

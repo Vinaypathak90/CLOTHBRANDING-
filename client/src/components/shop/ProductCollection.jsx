@@ -1,24 +1,29 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import axiosInstance from '../../api/axiosInstance'; // Centralized interceptor pipeline 
-import { Plus, X, ChevronRight, ShieldCheck, Truck, Heart } from 'lucide-react';
+import { Plus, X, ChevronRight, ChevronLeft, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { WishlistContext } from '../../context/WishlistContext'; // Context consumed flawlessly
 import { CartContext } from '../../context/CartContext';
+import { CMSContext } from '../../context/CMSContext'; // Injected for dynamic database title strings
+
 export default function ProductCollection() {
   // ====================================================================
-  // CONSUMING GLOBAL WISHLIST ENGINE HOOKS
+  // CONSUMING GLOBAL CORE CONTEXT PIPELINES
   // ====================================================================
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
+  const { cmsConfig } = useContext(CMSContext);
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(6); // 6 Items per batch loading setup
+  const [visibleCount, setVisibleCount] = useState(6); // 6 Items per initial loading setup
   const [selectedProduct, setSelectedProduct] = useState(null);
   
   // Interactive Modal Canvas States
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('Small');
 
-  const catalogSectionRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const sectionTopRef = useRef(null);
 
   // ====================================================================
   // 1. DATA PIPELINE SOURCE HYDRATION (FETCH LIVE FROM BACKEND)
@@ -27,7 +32,8 @@ export default function ProductCollection() {
     const fetchCatalogData = async () => {
       try {
         const res = await axiosInstance.get('/products/shop-list');
-        setProducts(res.data);
+        const extractedProducts = Array.isArray(res.data) ? res.data : (res.data.products || []);
+        setProducts(extractedProducts);
       } catch (err) {
         console.error("Critical tracking anomaly on product tables: ", err);
       } finally {
@@ -47,35 +53,58 @@ export default function ProductCollection() {
     return () => { document.body.style.overflow = 'unset'; };
   }, [selectedProduct]);
 
-  const handleLoadMore = () => {
-    setVisibleCount((prevCount) => prevCount + 6);
+  // ====================================================================
+  // 🔄 UI VIEWPORT INTERACTION CONTROLLERS
+  // ====================================================================
+  const handleScroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, clientWidth } = scrollContainerRef.current;
+      const scrollAmount = clientWidth * 0.75;
+      scrollContainerRef.current.scrollTo({
+        left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleToggleCount = () => {
+    if (visibleCount >= products.length) {
+      // Smooth collapse back to horizontal row and auto-scroll to top of section smoothly
+      setVisibleCount(6);
+      sectionTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      setVisibleCount((prevCount) => prevCount + 6);
+    }
   };
 
   const handleOpenDetailView = (product) => {
     setSelectedProduct(product);
-    setActiveImgIndex(0); // Reset position index mapping
+    setActiveImgIndex(0);
     if (product.variants && product.variants.length > 0) {
       setSelectedSize(product.variants[0].size || 'Small');
     }
   };
 
+  // Dynamic layout monitor state variables
+  const isExpandedView = visibleCount > 6;
+  const batchDisplayedProducts = products.slice(0, visibleCount);
+  const collectionDescText = cmsConfig?.collection_description || "Sunkissed Stories is a love letter to golden hours, carefree getaways, and sun-drenched memories. This collection is designed to make you feel like a true summer goddess — effortless, radiant, and unforgettable. This collection is your summer moodboard come to life: think juicy pops of tangerine, breezy pastels, buttery yellows, and ocean-kissed blues.";
+
   if (loading) {
     return (
       <div className="w-full py-40 text-center flex flex-col items-center justify-center bg-[#f7f4ef]">
         <div className="w-16 h-[2px] bg-[#b5862a] animate-pulse mb-4"></div>
-        <p className="text-[0.7rem] tracking-[0.35em] uppercase text-[#b5862a] font-bold font-['DM_Sans']">
+        <p className="text-[0.7rem] tracking-[0.35em] uppercase text-[#b5862a] font-bold">
           Synchronizing Luxury Editorial Matrices...
         </p>
       </div>
     );
   }
 
-  const batchDisplayedProducts = products.slice(0, visibleCount);
-
   return (
-    <div className="w-full bg-[#f7f4ef] text-[#1a1a1a] font-['DM_Sans'] relative pb-32">
+    <div ref={sectionTopRef} className="w-full bg-[#f7f4ef] text-[#1a1a1a] font-['DM_Sans'] relative pb-32 overflow-x-hidden">
       
-      {/* Structural GPU Layout Keyframes Injections */}
+      {/* Structural GPU Layout Keyframes & Styling Hooks */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes sheetSlideIn {
           from { opacity: 0; transform: translateY(35px); }
@@ -84,47 +113,80 @@ export default function ProductCollection() {
         .animate-sheet-slide {
           animation: sheetSlideIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
       {/* ====================================================================
-          SECTION A: STAGGERED ASYMMETRICAL CATALOG GALLERY GRID (image_9d1187.png Inspired)
+          SECTION A: DYNAMIC ROW-TO-GRID TRANSITION ENGINE
          ==================================================================== */}
-      <section ref={catalogSectionRef} className="w-full py-16 px-6 md:px-16 bg-[#f7f4ef]">
+      <section className="w-full py-16 px-4 md:px-16 relative">
         
         {/* Editorial Section Identity Title Header */}
-        <div className="max-w-3xl mx-auto text-center mb-24 flex flex-col items-center gap-2 select-none">
+        <div className="max-w-4xl mx-auto text-center mb-16 flex flex-col items-center gap-2 select-none">
           <span className="block text-[0.68rem] tracking-[0.4em] uppercase text-[#b5862a] font-bold">
             Couture Lineage
           </span>
-          <h2 className="font-['Playfair_Display'] text-[clamp(2rem,3.8vw,3rem)] font-normal tracking-wide text-[#1a1a1a]">
-            {products[0]?.category || 'Sunkissed Stories'}
+          <h2 className="font-['Playfair_Display'] text-[clamp(2rem,3.8vw,3rem)] font-normal tracking-wide text-[#1a1a1a] mt-1">
+            {products[0]?.categories?.name || products[0]?.category || 'Sunkissed Stories'}
           </h2>
-          <div className="w-10 h-[1px] bg-[#b5862a]/50 mt-2"></div>
+          <div className="w-10 h-[1px] bg-[#b5862a]/50 my-2"></div>
+          
+          <p className="text-neutral-500 font-light text-xs md:text-sm max-w-2xl leading-relaxed tracking-wide font-body">
+            {collectionDescText}
+          </p>
         </div>
 
-        {/* ASYMMETRICAL EDITORIAL GRID RHYTHM FROM YOUR REFERENCE IMAGE */}
-        <div className="max-w-[1500px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-24 lg:gap-y-32">
+        {/* CONTROLS OVERLAYS: Show slider arrows ONLY when catalog is in row layout */}
+        {products.length > 3 && !isExpandedView && (
+          <div className="hidden md:flex justify-end gap-3 max-w-[1500px] mx-auto mb-6 px-4">
+            <button 
+              onClick={() => handleScroll('left')}
+              className="p-3 border border-neutral-300 rounded-full bg-white/40 backdrop-blur-md hover:bg-[#1a1a1a] hover:text-white transition-all shadow-sm"
+              aria-label="Scroll Left"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button 
+              onClick={() => handleScroll('right')}
+              className="p-3 border border-neutral-300 rounded-full bg-white/40 backdrop-blur-md hover:bg-[#1a1a1a] hover:text-white transition-all shadow-sm"
+              aria-label="Scroll Right"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* 🔥 THE TRANSITION LAYOUT MATRIX LAYER */}
+        <div 
+          ref={scrollContainerRef}
+          className={`max-w-[1500px] mx-auto transition-all duration-700 ease-in-out ${
+            isExpandedView 
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-24 lg:gap-y-32 pt-6 pb-20' 
+              : 'flex overflow-x-auto scroll-smooth gap-8 pb-10 px-4 scrollbar-hide snap-x snap-mandatory'
+          }`}
+        >
           {batchDisplayedProducts.map((item, index) => {
-            // Apply slight vertical offset to every second item to break grid monotony beautifully
-            const isStaggeredColumn = index % 3 === 1;
+            // Apply original asymmetrical staggered logic only when view is expanded vertically
+            const isStaggeredColumn = isExpandedView && (index % 3 === 1);
             
             return (
               <div 
                 key={item.id} 
-                className={`flex flex-col gap-4 cursor-pointer group transition-all duration-500 ease-out relative ${
-                  isStaggeredColumn ? 'lg:translate-y-14' : ''
-                }`} 
+                className={`flex flex-col gap-4 cursor-pointer group relative p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.03)] hover:bg-white/60 hover:border-white/80 transition-all duration-500 ease-out ${
+                  isExpandedView ? 'w-full' : 'w-[280px] sm:w-[340px] flex-shrink-0 snap-start'
+                } ${isStaggeredColumn ? 'lg:translate-y-14' : ''}`}
               >
                 {/* Tall Portrait Crop Canvas Container Shell (3:4 Ratio Format) */}
-                <div className="relative aspect-[3/4] bg-[#e8e4dc] overflow-hidden rounded-xs shadow-[0_4px_25px_rgba(0,0,0,0.02)] transition-shadow duration-500 group-hover:shadow-[0_20px_50px_rgba(181,134,42,0.12)]">
+                <div className="relative aspect-[3/4] bg-[#e8e4dc] overflow-hidden rounded-lg shadow-sm">
                   
-                  {/* 🔥 FIXED BUG 1: toggleWishlist ab product ke full object data structure 'item' ko forward karega */}
+                  {/* Wishlist Toggle Action Pin */}
                   <button 
                     onClick={(e) => {
                       e.stopPropagation(); 
                       toggleWishlist(item); 
                     }}
-                    className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-white/90 backdrop-blur-xs shadow-md hover:scale-110 transition-transform duration-300 group/heart"
+                    className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-white/80 backdrop-blur-md shadow-md hover:scale-110 transition-all duration-300 group/heart"
                   >
                     <Heart 
                       size={14} 
@@ -141,21 +203,21 @@ export default function ProductCollection() {
                     alt={item.name} 
                     loading="lazy"
                     onClick={() => handleOpenDetailView(item)}
-                    className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-102 brightness-[0.98]"
+                    className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-103 brightness-[0.99]"
                   />
                   
-                  {/* Flat Bottom Explicit Quick Shop Strip Overlay Match from Image reference */}
+                  {/* Quick Shop Ribbon Bottom Slide Entry */}
                   <div 
                     onClick={() => handleOpenDetailView(item)}
-                    className="absolute bottom-0 left-0 w-full bg-[#b5862a] py-3 text-center text-white text-[0.65rem] tracking-[0.3em] uppercase font-semibold transition-all duration-400 opacity-0 transform translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 z-10"
+                    className="absolute bottom-0 left-0 w-full bg-[#b5862a]/90 backdrop-blur-xs py-3.5 text-center text-white text-[0.65rem] tracking-[0.3em] uppercase font-bold transition-all duration-400 opacity-0 transform translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 z-10"
                   >
                     Quick Shop
                   </div>
                 </div>
 
-                {/* Left Aligned Clean Minimal Text Elements Labels */}
-                <div className="flex flex-col gap-0.5 text-left font-['DM_Sans'] ps-1 mt-1" onClick={() => handleOpenDetailView(item)}>
-                  <h4 className="text-[0.88rem] font-light text-[#1a1a1a]/80 tracking-wide line-clamp-2 group-hover:text-[#b5862a] transition-colors duration-300 capitalize leading-relaxed">
+                {/* Text Metadata Labels */}
+                <div className="flex flex-col gap-0.5 text-left font-['DM_Sans'] px-1 pb-1" onClick={() => handleOpenDetailView(item)}>
+                  <h4 className="text-[0.88rem] font-light text-[#1a1a1a]/90 tracking-wide line-clamp-1 group-hover:text-[#b5862a] transition-colors duration-300 capitalize">
                     {item.name}
                   </h4>
                   <p className="text-[0.85rem] font-bold text-[#b5862a] tracking-wider mt-0.5">
@@ -167,26 +229,26 @@ export default function ProductCollection() {
           })}
         </div>
 
-        {/* Dynamic Batch Allocation Terminal Triggers */}
-        {products.length > visibleCount && (
-          <div className="w-full flex justify-center mt-32 lg:mt-40">
+        {/* 🔥 SMART MULTI-ACTION SEAMLESS ACCORDION TOGGLE BAR */}
+        {products.length > 6 && (
+          <div className={`w-full flex justify-center ${isExpandedView ? 'mt-24 lg:mt-32' : 'mt-12'}`}>
             <button 
-              onClick={handleLoadMore}
-              className="px-12 py-3.5 border-2 border-[#b5862a] text-[#b5862a] font-semibold text-[0.8rem] tracking-[0.25em] uppercase hover:bg-[#b5862a] hover:text-white transition-all duration-300 rounded-sm bg-transparent"
+              onClick={handleToggleCount}
+              className="px-12 py-3.5 border-2 border-[#b5862a] text-[#b5862a] font-bold text-[0.75rem] tracking-[0.25em] uppercase hover:bg-[#b5862a] hover:text-white transition-all duration-400 rounded-sm bg-transparent shadow-sm"
             >
-              Load More Curations
+              {isExpandedView ? "Show Less Collections" : "Load More Curations"}
             </button>
           </div>
         )}
       </section>
 
       {/* ====================================================================
-          SECTION B: MASTER FIXED SHEET ACCORDION WORKSPACE OVERLAY VIEW
+          SECTION B: MASTER FIXED GLASS ACORDION OVERLAY MODAL SHEET VIEW
          ==================================================================== */}
       {selectedProduct && (
-        <div className="fixed inset-0 w-full h-full z-50 overflow-y-auto bg-[#1a1a1a]/50 backdrop-blur-3xl px-4 md:px-16 py-12 flex items-start justify-center transition-all duration-500">
+        <div className="fixed inset-0 w-full h-full z-50 overflow-y-auto bg-[#1a1a1a]/40 backdrop-blur-xl px-4 md:px-16 py-12 flex items-start justify-center transition-all duration-500">
           
-          <div className="w-full max-w-[1400px] bg-[#f7f4ef] text-[#1a1a1a] p-6 md:p-12 shadow-[0_25px_60px_rgba(0,0,0,0.2)] rounded-lg border border-[#e8e2d8] relative mt-6 animate-sheet-slide mb-12 select-text">
+          <div className="w-full max-w-[1400px] bg-[#f7f4ef]/95 backdrop-blur-lg text-[#1a1a1a] p-6 md:p-12 shadow-[0_25px_60px_rgba(0,0,0,0.15)] rounded-2xl border border-white/50 relative mt-6 animate-sheet-slide mb-12 select-text">
             
             {/* Modal Internal Navigation Header Controls */}
             <div className="w-full mb-10 flex items-center justify-between border-b border-[#e8e2d8] pb-5 font-['DM_Sans']">
@@ -206,10 +268,9 @@ export default function ProductCollection() {
             {/* Split Screen Execution Grid Matrix Area */}
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
               
-              {/* ── LEFT CELL: VERTICAL THUMBNAIL REEL STRIP LOOP (3+ IMAGE VIEWINGS SUPPORTED) ── */}
+              {/* ── LEFT CELL: VERTICAL THUMBNAIL REEL STRIP LOOP ── */}
               <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-5 w-full">
                 
-                {/* Dynamic Strip Map Layout Rendering precisely every array asset directly from DB */}
                 <div className="flex md:flex-col gap-3 flex-wrap md:w-[85px] flex-shrink-0">
                   {selectedProduct.images && selectedProduct.images.length > 0 ? (
                     selectedProduct.images.map((imgUrl, idx) => (
@@ -228,12 +289,12 @@ export default function ProductCollection() {
                   )}
                 </div>
 
-                {/* Main Production Frame Supporting deep slow scale hover transitions matrix */}
+                {/* Main Production Frame */}
                 <div className="flex-grow aspect-[3/4] bg-white relative overflow-hidden group border border-[#e8e2d8] rounded-md shadow-sm">
                   <img 
                     src={selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images[activeImgIndex] : 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80'} 
                     alt={selectedProduct.name} 
-                    className="w-full h-full object-cover object-top transition-transform duration-700 cubic-bezier(0.25, 1, 0.5, 1) group-hover:scale-104 cursor-zoom-in"
+                    className="w-full h-full object-cover object-top transition-transform duration-700 cubic-bezier(0.25, 1, 0.5, 1) group-hover:scale-104"
                   />
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-xs w-9 h-9 rounded-full flex items-center justify-center shadow-xs border border-neutral-100">
                     <Plus size={15} className="text-[#1a1a1a]" />
@@ -244,7 +305,6 @@ export default function ProductCollection() {
               {/* ── RIGHT CELL: BOUTIQUE METADATA CONTROLS TERMINALS PANEL ── */}
               <div className="lg:col-span-5 flex flex-col gap-6 text-left w-full font-['DM_Sans']">
                 
-                {/* Product Headers + Split Sheet Wishlist Button Sync */}
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex flex-col gap-2">
                     <span className="text-[0.68rem] tracking-[0.3em] font-semibold text-[#b5862a] uppercase">PREETI WEARS / EXCLUSIVE DESIGN</span>
@@ -256,7 +316,6 @@ export default function ProductCollection() {
                     </p>
                   </div>
                   
-                  {/* 🔥 FIXED BUG 2: Context core call updates using the complete current state node 'selectedProduct' */}
                   <button
                     onClick={() => toggleWishlist(selectedProduct)}
                     className="p-3 rounded-full bg-white border border-[#e8e2d8] hover:border-[#b5862a] transition-all duration-300 shadow-xs group/modal-heart"
@@ -293,7 +352,7 @@ export default function ProductCollection() {
                         </button>
                       ))
                     ) : (
-                      ['XS', 'Small', 'Medium', 'Large', 'XL', '2XL', '3XL'].map((sz) => (
+                      ['XS', 'Small', 'Medium', 'Large', 'XL'].map((sz) => (
                         <button
                           key={sz}
                           onClick={() => setSelectedSize(sz)}
@@ -313,7 +372,7 @@ export default function ProductCollection() {
                   <button 
                     onClick={() => {
                       addToCart(selectedProduct, selectedSize, 1);
-                      setSelectedProduct(null); // Amazon Strategy: Close modal view smoothly upon addition success
+                      setSelectedProduct(null); 
                     }}
                     className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] transition-all duration-400 hover:bg-[#1a1a1a] hover:text-white rounded-md shadow-xs"
                   >
@@ -331,7 +390,7 @@ export default function ProductCollection() {
 
                 {/* Specifications Bullets Array Injections */}
                 {selectedProduct.bullet_points && selectedProduct.bullet_points.length > 0 && (
-                  <div className="flex flex-col gap-2 bg-white p-5 rounded-md border border-[#e8e2d8] mt-2 shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+                  <div className="flex flex-col gap-2 bg-white p-5 rounded-md border border-[#e8e2d8] mt-2 shadow-xs">
                     <p className="text-[0.75rem] font-bold tracking-wider text-[#b5862a] uppercase mb-1">Garment Specifications:</p>
                     <ul className="flex flex-col gap-2 text-[0.9rem] font-light text-neutral-600">
                       {selectedProduct.bullet_points.map((pt, idx) => (
@@ -346,15 +405,14 @@ export default function ProductCollection() {
                   <div className="text-[0.9rem] font-light text-neutral-500 border-l-2 border-[#b5862a] ps-4 py-1 flex flex-col gap-1 italic mt-2">
                     {selectedProduct.model_info.height && <p>Model height - {selectedProduct.model_info.height}</p>}
                     {selectedProduct.model_info.bust && <p>Model bust - {selectedProduct.model_info.bust}</p>}
-                    {selectedProduct.model_info.breast && <p>Model bust - {selectedProduct.model_info.breast}</p>}
                     {selectedProduct.model_info.waist && <p>Model waist - {selectedProduct.model_info.waist}</p>}
                     {selectedProduct.model_info.wears && <p>Model wears - {selectedProduct.model_info.wears}</p>}
                   </div>
                 )}
 
-                {/* Safe Option Information Panels Accoridons */}
+                {/* Secure Guarantee Info Footer Accordions */}
                 <div className="flex flex-col gap-3 mt-4">
-                  <div className="bg-white p-5 border border-[#e8e2d8] flex gap-3.5 items-start rounded-md shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+                  <div className="bg-white p-5 border border-[#e8e2d8] flex gap-3.5 items-start rounded-md shadow-xs">
                     <ShieldCheck size={19} className="text-[#b5862a] mt-0.5 flex-shrink-0" />
                     <div>
                       <h5 className="text-[0.75rem] font-bold tracking-wider uppercase text-[#1a1a1a] mb-1">Secure Transaction Guarantee</h5>
@@ -362,7 +420,7 @@ export default function ProductCollection() {
                     </div>
                   </div>
 
-                  <div className="bg-white p-5 border border-[#e8e2d8] flex gap-3.5 items-start rounded-md shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+                  <div className="bg-white p-5 border border-[#e8e2d8] flex gap-3.5 items-start rounded-md shadow-xs">
                     <Truck size={19} className="text-[#b5862a] mt-0.5 flex-shrink-0" />
                     <div>
                       <h5 className="text-[0.75rem] font-bold tracking-wider uppercase text-[#1a1a1a] mb-1">Premium Delivery Logistics</h5>

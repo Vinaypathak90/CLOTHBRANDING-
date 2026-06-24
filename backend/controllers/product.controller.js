@@ -1,10 +1,8 @@
 const { supabase } = require('../config/db');
 
 // ====================================================================
-// 🛠️ HELPER MATRIX LAYER (Internal Core Framework)
+// 🛠️ INTERNAL HELPER MATRIX LAYER
 // ====================================================================
-
-// Secure automatic slug formatting helper layer function
 const generateCleanSlug = (text) => {
   return text
     .toString()
@@ -16,47 +14,50 @@ const generateCleanSlug = (text) => {
 };
 
 // ====================================================================
-// 👥 CLIENT FACING OPERATIONS (PUBLIC ENDPOINTS)
+// 👥 CLIENT FACING OPERATIONS (PUBLIC CATALOG CHANNELS)
 // ====================================================================
 
-// 1. Fetch filtered and sorted products for frontend catalog views
+// 1. Fetch filtered and sorted products for frontend catalog viewports
 exports.getPublicProducts = async (req, res, next) => {
   try {
     const { category, sort, minPrice, maxPrice, isFeatured, isNewArrival } = req.query;
     
-    let query = supabase
+    // Explicit selection ignores internal parameters like cost_price for security leaks
+    let queryBuilder = supabase
       .from('products')
       .select('id, name, slug, sku, description, images, price, discount_price, variants, bullet_points, model_info, is_featured, is_bestseller, is_new_arrival')
       .eq('is_hidden', false);
 
-    // Apply strict filtering dynamics
-    if (category) query = query.eq('category_id', category);
-    if (isFeatured) query = query.eq('is_featured', isFeatured === 'true');
-    if (isNewArrival) query = query.eq('is_new_arrival', isNewArrival === 'true');
-    if (minPrice) query = query.gte('price', Number(minPrice));
-    if (maxPrice) query = query.lte('price', Number(maxPrice));
+    // Apply strict schema filters natively
+    if (category) queryBuilder = queryBuilder.eq('category_id', category);
+    if (isFeatured) queryBuilder = queryBuilder.eq('is_featured', isFeatured === 'true');
+    if (isNewArrival) queryBuilder = queryBuilder.eq('is_new_arrival', isNewArrival === 'true');
+    if (minPrice) queryBuilder = queryBuilder.gte('price', Number(minPrice));
+    if (maxPrice) queryBuilder = queryBuilder.lte('price', Number(maxPrice));
 
-    // High fashion index sorting management structures
+    // Haute Couture catalog index sorting management
     if (sort === 'price-low-high') {
-      query = query.order('price', { ascending: true });
+      queryBuilder = queryBuilder.order('price', { ascending: true });
     } else if (sort === 'price-high-low') {
-      query = query.order('price', { ascending: false });
+      queryBuilder = queryBuilder.order('price', { ascending: false });
     } else if (sort === 'bestseller') {
-      query = query.order('is_bestseller', { ascending: false });
+      queryBuilder = queryBuilder.order('is_bestseller', { ascending: false });
     } else {
-      query = query.order('created_at', { ascending: false });
+      queryBuilder = queryBuilder.order('created_at', { ascending: false });
     }
 
-    const { data, error } = await query;
+    const { data: products, error } = await queryBuilder;
     if (error) throw error;
 
-    return res.status(200).json(data);
-  } catch (err) { 
-    next(err); 
-  }
+    return res.status(200).json({
+      success: true,
+      count: products.length,
+      products: products
+    });
+  } catch (err) { next(err); }
 };
 
-// 2. 🔥 MASTER DISPATCHER: AUTOMATICALLY SEPARATES NUMERIC ID FROM SLUGS
+// 2. 🔥 MASTER DISPATCHER: Resolves polymorphic queries cleanly by parsing alphanumeric identifiers
 exports.getProductDetailMasterDispatcher = async (req, res, next) => {
   try {
     const { identifier } = req.params;
@@ -65,13 +66,13 @@ exports.getProductDetailMasterDispatcher = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Verification parameter identifier is mandatory.' });
     }
 
-    // 🛡️ REGEX GUARD: Check if the identifier consists purely of numeric digits
+    // 🛡️ REGEX GUARD: Route decision based on pure numerical string match criteria
     const isNumericId = /^\d+$/.test(identifier);
 
     if (isNumericId) {
-      console.log(`[ATELIER ENGINE]: Dispatching matching numerical ID row node: ${identifier}`);
+      console.log(`[ATELIER ENGINE]: Resolving details via numeric database key row: ${identifier}`);
       
-      const { data, error } = await supabase
+      const { data: product, error } = await supabase
         .from('products')
         .select('*, categories(id, name, slug)')
         .eq('id', Number(identifier))
@@ -79,14 +80,14 @@ exports.getProductDetailMasterDispatcher = async (req, res, next) => {
         .maybeSingle();
 
       if (error) return next(error);
-      if (!data) return res.status(404).json({ success: false, message: 'Product silhouette not found by ID.' });
+      if (!product) return res.status(404).json({ success: false, message: 'Product silhouette not mapped by ID reference.' });
       
-      return res.status(200).json(data);
+      return res.status(200).json({ success: true, product: product });
 
     } else {
-      console.log(`[ATELIER ENGINE]: Dispatching matching alphanumeric string slug node: ${identifier}`);
+      console.log(`[ATELIER ENGINE]: Resolving details via semantic slug text string: ${identifier}`);
       
-      const { data, error } = await supabase
+      const { data: product, error } = await supabase
         .from('products')
         .select('*, categories(id, name, slug)')
         .eq('slug', identifier.toLowerCase().trim())
@@ -94,21 +95,19 @@ exports.getProductDetailMasterDispatcher = async (req, res, next) => {
         .maybeSingle();
 
       if (error) return next(error);
-      if (!data) return res.status(404).json({ success: false, message: 'Product silhouette not found by Slug.' });
+      if (!product) return res.status(404).json({ success: false, message: 'Product silhouette not mapped by Slug reference.' });
       
-      return res.status(200).json(data);
+      return res.status(200).json({ success: true, product: product });
     }
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 
 // ====================================================================
-// 🛠️ ADMIN CRM OPERATIONS (SECURE ROUTES GATEWAY)
+// 👑 ADMINISTRATIVE CRM MODULES (SECURED EXECUTIVE CONTROL PANEL)
 // ====================================================================
 
-// 3. Admin Module: Instantiate / Add New Product Entry Node
+// 3. Admin Module: Instantiate brand new garment profile entry nodes
 exports.adminCreateProduct = async (req, res, next) => {
   try {
     const { 
@@ -120,13 +119,13 @@ exports.adminCreateProduct = async (req, res, next) => {
     if (!name || !sku || !price || !cost_price) {
       return res.status(400).json({
         success: false,
-        message: "Mandatory system entries missing. Provide Name, SKU, Price, and Cost Price parameters."
+        message: "Mandatory system entries missing. Provide Name, SKU, Price, and Cost Price configurations."
       });
     }
 
     const computedSlug = slug ? generateCleanSlug(slug) : generateCleanSlug(name);
 
-    const { data, error } = await supabase
+    const { data: newProduct, error } = await supabase
       .from('products')
       .insert([{
         name: name.trim(),
@@ -134,10 +133,10 @@ exports.adminCreateProduct = async (req, res, next) => {
         sku: sku.toUpperCase().trim(),
         description: description || '',
         images: images || [],
-        category_id: category_id || null,
-        variants: variants || [],         
-        bullet_points: bullet_points || [], 
-        model_info: model_info || {},       
+        category_id: category_id ? parseInt(category_id) : null,
+        variants: variants || [],          // Ingests array-objects into PostgreSQL JSONB block natively
+        bullet_points: bullet_points || [], // Custom technical descriptions array
+        model_info: model_info || {},       // Height, wear sizes matrix
         price: parseFloat(price),
         cost_price: parseFloat(cost_price),
         discount_price: discount_price ? parseFloat(discount_price) : null,
@@ -154,15 +153,13 @@ exports.adminCreateProduct = async (req, res, next) => {
     
     return res.status(201).json({ 
       success: true, 
-      message: 'New design successfully initialized within apparel system matrix.', 
-      product: data 
+      message: 'New couture layout blueprint successfully saved onto ledger registries.', 
+      product: newProduct 
     });
-  } catch (err) { 
-    next(err); 
-  }
+  } catch (err) { next(err); }
 };
 
-// 4. Admin Module: Edit / Modify System Parameters and Overrides Safely
+// 4. Admin Module: Execute isolated mutations changes across existing products properties
 exports.adminUpdateProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -170,6 +167,7 @@ exports.adminUpdateProduct = async (req, res, next) => {
     
     const sanitizedPayload = {};
     
+    // Type casting and sanitization matrix alignments
     if (updatePayload.name !== undefined) {
       sanitizedPayload.name = updatePayload.name.trim();
       if (!updatePayload.slug) sanitizedPayload.slug = generateCleanSlug(updatePayload.name);
@@ -194,11 +192,11 @@ exports.adminUpdateProduct = async (req, res, next) => {
     if (updatePayload.bullet_points !== undefined) sanitizedPayload.bullet_points = updatePayload.bullet_points;
     if (updatePayload.model_info !== undefined) sanitizedPayload.model_info = updatePayload.model_info;
     if (updatePayload.tags !== undefined) sanitizedPayload.tags = updatePayload.tags;
-    if (updatePayload.category_id !== undefined) sanitizedPayload.category_id = updatePayload.category_id || null;
+    if (updatePayload.category_id !== undefined) sanitizedPayload.category_id = updatePayload.category_id ? parseInt(updatePayload.category_id) : null;
 
     sanitizedPayload.updated_at = new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data: updatedProduct, error } = await supabase
       .from('products')
       .update(sanitizedPayload)
       .eq('id', id)
@@ -209,15 +207,13 @@ exports.adminUpdateProduct = async (req, res, next) => {
     
     return res.status(200).json({ 
       success: true, 
-      message: 'Catalog record mutations executed successfully.', 
-      product: data 
+      message: 'Garment profile structural attributes updated successfully.', 
+      product: updatedProduct 
     });
-  } catch (err) { 
-    next(err); 
-  }
+  } catch (err) { next(err); }
 };
 
-// 5. Admin Module: Purge / Hard Delete Specified Inventory Entry Matrix
+// 5. Admin Module: Hard purge permanent deletion parameters from relational schema entries
 exports.adminDeleteProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -231,24 +227,54 @@ exports.adminDeleteProduct = async (req, res, next) => {
     
     return res.status(200).json({ 
       success: true, 
-      message: 'Product profile permanently deleted from server registries.' 
+      message: 'Design asset blueprint wiped completely from storage server nodes.' 
     });
-  } catch (err) { 
-    next(err); 
-  }
+  } catch (err) { next(err); }
 };
 
-// 6. Admin Module: Master Full Catalog Fetching for Admin Grid System
+// 6. Admin Module: Master query pull fetches unhidden & hidden elements parameters for dashboard table
 exports.adminGetFullCatalog = async (req, res, next) => {
   try {
-    const { data, error } = await supabase
+    const { data: fullCatalog, error } = await supabase
       .from('products')
       .select('*, categories(name)')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return res.status(200).json(data);
-  } catch (err) { 
-    next(err); 
-  }
+    return res.status(200).json({
+      success: true,
+      count: fullCatalog.length,
+      catalog: fullCatalog
+    });
+  } catch (err) { next(err); }
+};
+
+// ====================================================================
+// 🎯 PUBLIC: FETCH SINGLE PRODUCT BY DIRECT NUMERIC DATABASE ID
+// ====================================================================
+exports.getProductById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    console.log(`[ATELIER ENGINE]: Querying database blueprints for item ID: ${id}`);
+
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*, categories(*)')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("❌ [SUPABASE ID QUERY FAULT]:", error.message);
+      return next(error);
+    }
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Garment blueprint footprint not found." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      product: product
+    });
+  } catch (err) { next(err); }
 };

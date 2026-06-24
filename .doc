@@ -62,3 +62,153 @@ preeti_clothing_brand/
     ├── package.json              # Client libraries configurations manifest
     ├── tailwind.config.js        # Color frameworks configuration bindings map
     └── vite.config.js            # Vite compiler configuration file
+
+
+    bro yei to ho gya ab google auth ka process bata kese karna hai
+
+Bhai, backend ka kaam toh ekdam bulletproof ho gaya hai. Ab frontend par Google Auth lagana bohot hi smooth aur modern process hai.
+
+Iske liye hum sabse latest aur secure library @react-oauth/google use karenge. Yeh direct Google ka official standard hai. Isme frontend Google se token lega, usko decode karega, aur jo data (name, email, picture) milega wo hamare /api/auth/google-sync wale backend par bhej dega.
+
+Chalo isko 4 simple steps me complete karte hain:
+
+📄 Step 1: Install Required Packages
+Apne frontend (client) folder ke terminal me jaao aur yeh library install karo:
+
+Bash
+npm install @react-oauth/google jwt-decode
+Note: jwt-decode hum isliye use kar rahe hain taaki Google jo encrypted token dega, hum use frontend par padh sakein ki user ka naam aur email kya hai.
+
+📄 Step 2: Google Cloud Console Se Client ID Lena
+Google Cloud Console par jaao.
+
+Naya project banao aur APIs & Services > Credentials me jaao.
+
+Create Credentials > OAuth client ID par click karo.
+
+Application type me "Web application" select karo.
+
+Authorized JavaScript origins me apna frontend URL daalo: http://localhost:5173 (agar aapka Vite kisi aur port par hai toh wo daalna).
+
+Save karo aur aapko ek Client ID mil jayegi (123456...apps.googleusercontent.com).
+
+📄 Step 3: Wrap Your App with Google Provider (client/src/main.jsx)
+Apne main.jsx file me sabse upar GoogleOAuthProvider ko import karo aur apne <App /> ko uske andar wrap kar do.
+
+JavaScript
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+// 🔥 Import Google OAuth Provider
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+// ... Aapke baaki providers (AuthContext, CartContext etc.)
+
+const GOOGLE_CLIENT_ID = "YAHAN_APNI_GOOGLE_CLIENT_ID_PASTE_KARO";
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}> {/* 🔥 Provider Wrapper */}
+      
+      {/* ... Aapke saare baaki Context Providers yahan rahenge ... */}
+      <App />
+      
+    </GoogleOAuthProvider>
+  </React.StrictMode>
+);
+📄 Step 4: The Google Login Button Component (client/src/pages/auth/Login.jsx)
+Ab jahan bhi aapka Login ya Signup form hai, wahan ye shandar Google button lagana hai. Ye backend ki googleIdentitySync API se seedha connect karega:
+
+JavaScript
+import React, { useContext } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+import axiosInstance from '../../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+// import { AuthContext } from '../../context/AuthContext'; // Agar Auth state update karni hai
+// import { CartContext } from '../../context/CartContext'; // Agar login ke baad cart refresh karni hai
+
+export default function Login() {
+  const navigate = useNavigate();
+  // const { setIsLoggedIn, setUser } = useContext(AuthContext);
+  // const { refreshCart } = useContext(CartContext);
+
+  // ====================================================================
+  // 🔥 GOOGLE AUTH SUCCESS PIPELINE
+  // ====================================================================
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // 1. Google ke encrypted credential ko decode karo
+      const decodedData = jwtDecode(credentialResponse.credential);
+      
+      // 2. Apne backend ke hisaab se payload taiyar karo
+      const payload = {
+        googleId: decodedData.sub,       // Google ka unique ID
+        email: decodedData.email,
+        name: decodedData.name,
+        avatarUrl: decodedData.picture
+      };
+
+      // 3. Apne secure backend par data bhejo (Jo kal aapne controller me banaya tha)
+      const res = await axiosInstance.post('/auth/google-sync', payload);
+
+      if (res.data.success) {
+        // 4. Token save karo aur user ko andar aane do!
+        localStorage.setItem('usr_tk', res.data.token);
+        
+        // Agar context use kar rahe ho toh yahan state update kar do
+        // setIsLoggedIn(true);
+        // setUser(res.data.user);
+        // refreshCart(); 
+
+        alert("Login Successful! Welcome " + res.data.user.name);
+        navigate('/'); // Home page par bhej do
+      }
+    } catch (err) {
+      console.error("Google Sync Failed: ", err);
+      alert("Something went wrong while syncing with Google.");
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error("Google Login popup was closed or failed.");
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md mt-20">
+      <h2 className="text-2xl font-bold text-center mb-6 font-['Playfair_Display']">Sign In</h2>
+      
+      {/* Traditional Form yahan aayega (Email/Password) */}
+      
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or continue with</span>
+        </div>
+      </div>
+
+      {/* 🔥 The Official Google One-Tap Button */}
+      <div className="flex justify-center">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          useOneTap // Ye true karne se right side me ek chhota sa popup bhi aata hai automatically
+          shape="rectangular"
+          theme="outline"
+          size="large"
+        />
+      </div>
+
+    </div>
+  );
+}
+⚡ Ye Setup Perfect Kyun Hai?
+Security: Frontend Google se baat karke verify karta hai, aur fir wahan se mili verified detail (Decoded JWT) backend ko deta hai.
+
+Instant Sync: Apke backend controller (googleIdentitySync) me pehle se logic likha hai ki agar ye Google ID pehle aayi hai toh login karwao, aur agar nayi hai toh naya profile bana do!
+
+No Passwords Needed: Google se aaye users ka password backend me null save hoga (jo aapne schema me explicitly allow kiya hai), jisse database architecture ekdam clean rahega.

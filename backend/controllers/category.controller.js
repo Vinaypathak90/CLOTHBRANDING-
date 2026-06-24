@@ -1,4 +1,6 @@
+const jwt = require('jsonwebtoken');
 const { supabase } = require('../config/db');
+
 
 // ==========================================
 // CLIENT FACING OPERATIONS (PUBLIC ROUTES)
@@ -36,6 +38,25 @@ exports.getCategoryBySlug = async (req, res, next) => {
 
     return res.status(200).json(data);
   } catch (err) { next(err); }
+};
+
+exports.getAllCategories = async (req, res, next) => {
+  try {
+    console.log("[ATELIER CATEGORIES]: Hydrating category trees directly from Supabase...");
+    const { data: categories, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      categories: categories || []
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ==========================================

@@ -3,22 +3,27 @@ const {
   instantiateCheckoutOrder,
   getOrderTrackingPipeline,
   getClientOrderHistory,
+  getMyOrders,
   adminGetAllOrdersDashboard,
   adminMutateOrderStatus,
   adminAssignCourierAgent
 } = require('../controllers/order.controller');
-const { verifyAdminClearance, verifyClientToken } = require('../middleware/auth.middleware');
 
-// Public checkout & validation entry channels vectors
-router.post('/checkout-instantiate', instantiateCheckoutOrder);
+const { verifyUserAuth, verifyAdminClearance } = require('../middleware/auth.middleware');
+
+// ==========================================
+// CLIENT GATEWAYS (PUBLIC / SECURED SESSIONS)
+// ==========================================
+router.post('/checkout-instantiate', verifyUserAuth, instantiateCheckoutOrder);
 router.get('/track/:order_id_string', getOrderTrackingPipeline);
+router.get('/my-orders-summary', verifyUserAuth, getClientOrderHistory);
+router.get('/my-orders', verifyUserAuth, getMyOrders); // 🔥 Core dashboard panel pipeline hook
 
-// Client account private validation logs viewports
-router.get('/history', verifyClientToken, getClientOrderHistory);
-
-// High Security Admin Control Panel Operations (CRM Module Nodes)
-router.get('/crm-dashboard', verifyAdminClearance, adminGetAllOrdersDashboard);
-router.put('/crm-advance-pipeline/:id', verifyAdminClearance, adminMutateOrderStatus);
-router.post('/crm-allocate-delivery', verifyAdminClearance, adminAssignCourierAgent);
+// ==========================================
+// SECURE ADMINISTRATIVE CRM GATEWAYS 
+// ==========================================
+router.get('/admin/dashboard', verifyAdminClearance, adminGetAllOrdersDashboard);
+router.put('/admin/mutate-status/:id', verifyAdminClearance, adminMutateOrderStatus);
+router.post('/admin/assign-agent', verifyAdminClearance, adminAssignCourierAgent);
 
 module.exports = router;
