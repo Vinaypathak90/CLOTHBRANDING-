@@ -1,49 +1,56 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import axiosInstance from '../../api/axiosInstance'; 
-import { Plus, X, ChevronRight, ChevronLeft, ShieldCheck, Truck, Heart } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axiosInstance from '../../api/axiosInstance';
+import { RefreshCw, ArrowLeft, Plus, X, ChevronRight, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { WishlistContext } from '../../context/WishlistContext'; 
 import { CartContext } from '../../context/CartContext';
-import { CMSContext } from '../../context/CMSContext'; 
-import { useNavigate } from 'react-router-dom';
 
-export default function ProductCollection() {
-  // ====================================================================
-  // CONSUMING GLOBAL CORE CONTEXT PIPELINES
-  // ====================================================================
+export default function CategoryPage() {
+  const { slug } = useParams(); // URL se category ka naam nikalna (e.g., 'sunkissed-stories')
+  const navigate = useNavigate();
+  
+  // Contexts
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
-  const { cmsConfig } = useContext(CMSContext);
 
+  // States
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(6); 
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [error, setError] = useState('');
   
-  // Interactive Modal Canvas States
+  // Modal States (Same as Home Page for consistency)
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('Small');
 
-  const scrollContainerRef = useRef(null);
-  const sectionTopRef = useRef(null);
-  const navigate = useNavigate();
-
-  // ====================================================================
-  // 1. DATA PIPELINE SOURCE HYDRATION (FETCH LIVE FROM BACKEND)
-  // ====================================================================
   useEffect(() => {
-    const fetchCatalogData = async () => {
+    const fetchCategoryProducts = async () => {
       try {
-        const res = await axiosInstance.get('/products/shop-list');
-        const extractedProducts = Array.isArray(res.data) ? res.data : (res.data.products || []);
-        setProducts(extractedProducts);
+        setLoading(true);
+        setError('');
+        
+        // 🔥 Hitting the backend with the exact category slug filter
+        const res = await axiosInstance.get('/products/shop-list', {
+          params: { category: slug }
+        });
+
+        if (res.data && res.data.success) {
+          setProducts(res.data.products);
+        } else {
+          setProducts([]);
+        }
       } catch (err) {
-        console.error("Critical tracking anomaly on product tables: ", err);
+        console.error("Failed to fetch category products:", err);
+        setError('Failed to load this collection. Please try again.');
       } finally {
         setLoading(false);
       }
     };
-    fetchCatalogData();
-  }, []);
+
+    if (slug) {
+      fetchCategoryProducts();
+    }
+  }, [slug]);
 
   // Prevent background parent scroll leakage when overlay glass sheet is active
   useEffect(() => {
@@ -55,20 +62,6 @@ export default function ProductCollection() {
     return () => { document.body.style.overflow = 'unset'; };
   }, [selectedProduct]);
 
-  // ====================================================================
-  // 🔄 UI VIEWPORT INTERACTION CONTROLLERS
-  // ====================================================================
-  const handleScroll = (direction) => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, clientWidth } = scrollContainerRef.current;
-      const scrollAmount = clientWidth * 0.75;
-      scrollContainerRef.current.scrollTo({
-        left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
   const handleOpenDetailView = (product) => {
     setSelectedProduct(product);
     setActiveImgIndex(0);
@@ -77,25 +70,15 @@ export default function ProductCollection() {
     }
   };
 
-  // 🔥 THE FIX: Fetching both Title and Description directly from CMS Admin Config
-  const collectionTitleText = cmsConfig?.collection_title || "Sunkissed Stories";
-  const collectionDescText = cmsConfig?.collection_description || "Sunkissed Stories is a love letter to golden hours, carefree getaways, and sun-drenched memories. This collection is designed to make you feel like a true summer goddess — effortless, radiant, and unforgettable. This collection is your summer moodboard come to life: think juicy pops of tangerine, breezy pastels, buttery yellows, and ocean-kissed blues.";
-
-  if (loading) {
-    return (
-      <div className="w-full py-20 text-center flex flex-col items-center justify-center bg-[#f7f4ef]">
-        <div className="w-16 h-[2px] bg-[#b5862a] animate-pulse mb-4"></div>
-        <p className="text-[0.7rem] tracking-[0.35em] uppercase text-[#b5862a] font-bold">
-          Synchronizing Luxury Editorial Matrices...
-        </p>
-      </div>
-    );
-  }
+  // Format slug for header fallback (e.g., 'sunkissed-stories' -> 'Sunkissed Stories')
+  const formattedCategoryName = slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  // Use DB Category Name if available, otherwise fallback to formatted slug
+  const pageTitle = products[0]?.categories?.name || formattedCategoryName;
 
   return (
-    <div ref={sectionTopRef} className="w-full bg-[#f7f4ef] text-[#1a1a1a] font-['DM_Sans'] relative pb-16 overflow-x-hidden">
+    <div className="min-h-screen bg-[#f7f4ef] pt-28 pb-24 px-4 md:px-12 lg:px-20 font-['DM_Sans'] overflow-x-hidden">
       
-      {/* Structural GPU Layout Keyframes & Styling Hooks */}
+      {/* Structural GPU Layout Keyframes for Modal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes sheetSlideIn {
           from { opacity: 0; transform: translateY(35px); }
@@ -104,63 +87,62 @@ export default function ProductCollection() {
         .animate-sheet-slide {
           animation: sheetSlideIn 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
-      {/* ====================================================================
-          SECTION A: DYNAMIC ROW-TO-GRID TRANSITION ENGINE
-         ==================================================================== */}
-      <section className="w-full py-10 px-4 md:px-16 relative">
+      <div className="max-w-[1400px] mx-auto">
         
-        {/* Editorial Section Identity Title Header */}
-        <div className="max-w-4xl mx-auto text-center mb-10 flex flex-col items-center gap-2 select-none">
-          <span className="block text-[0.68rem] tracking-[0.4em] uppercase text-[#b5862a] font-bold">
-            Couture Lineage
-          </span>
-          {/* 🔥 THE FIX: Rendering Title from CMS Config instead of Product Category */}
-          <h2 className="font-['Playfair_Display'] text-[clamp(2rem,3.8vw,3rem)] font-normal tracking-wide text-[#1a1a1a] mt-1 capitalize">
-            {collectionTitleText}
-          </h2>
-          <div className="w-10 h-[1px] bg-[#b5862a]/50 my-2"></div>
+        {/* ── HEADER & NAVIGATION ── */}
+        <div className="mb-12 flex flex-col items-center relative">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="absolute left-0 top-0 flex items-center gap-2 text-neutral-500 hover:text-[#b5862a] transition-colors text-xs font-bold uppercase tracking-widest"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
           
-          <p className="text-neutral-500 font-light text-xs md:text-sm max-w-2xl leading-relaxed tracking-wide font-body">
-            {collectionDescText}
-          </p>
+          <div className="text-center mt-8 md:mt-0">
+            <span className="text-[10px] tracking-[0.4em] uppercase text-[#b5862a] font-bold block mb-2">
+              Exclusive Collection
+            </span>
+            <h1 className="font-['Playfair_Display'] text-4xl md:text-5xl lg:text-6xl font-normal text-neutral-900 capitalize">
+              {pageTitle}
+            </h1>
+            <div className="w-16 h-[1px] bg-[#b5862a]/50 mx-auto mt-6"></div>
+          </div>
         </div>
 
-        {/* CONTROLS OVERLAYS: Show slider arrows ONLY when catalog is in row layout */}
-        {products.length > 3 && (
-          <div className="hidden md:flex justify-end gap-3 max-w-[1500px] mx-auto mb-4 px-4">
-            <button 
-              onClick={() => handleScroll('left')}
-              className="p-3 border border-neutral-300 rounded-full bg-white/40 backdrop-blur-md hover:bg-[#1a1a1a] hover:text-white transition-all shadow-sm"
-              aria-label="Scroll Left"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button 
-              onClick={() => handleScroll('right')}
-              className="p-3 border border-neutral-300 rounded-full bg-white/40 backdrop-blur-md hover:bg-[#1a1a1a] hover:text-white transition-all shadow-sm"
-              aria-label="Scroll Right"
-            >
-              <ChevronRight size={16} />
+        {/* ── SYSTEM STATES (LOADING / ERROR / EMPTY) ── */}
+        {loading && (
+          <div className="w-full flex flex-col items-center justify-center py-32">
+            <RefreshCw size={32} className="animate-spin text-[#b5862a] mb-4" />
+            <p className="text-xs uppercase tracking-widest font-bold text-neutral-400">Curating Silhouette Designs...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="w-full text-center py-20 text-red-500 font-bold uppercase tracking-wider">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && products.length === 0 && (
+          <div className="w-full text-center py-24 border border-dashed border-neutral-300 rounded-xl">
+            <p className="text-lg text-neutral-500 font-['Playfair_Display'] italic">No designs currently available in this collection.</p>
+            <button onClick={() => navigate('/collections')} className="mt-6 px-10 py-3 border-2 border-[#b5862a] text-[#b5862a] text-[0.7rem] tracking-[0.25em] font-bold uppercase hover:bg-[#b5862a] hover:text-white transition-all duration-400 rounded-sm">
+              Explore All Collections
             </button>
           </div>
         )}
 
-        {/* 🔥 THE TRANSITION LAYOUT MATRIX LAYER */}
-        <div 
-          ref={scrollContainerRef}
-          className="max-w-[1500px] mx-auto transition-all duration-700 ease-in-out flex overflow-x-auto scroll-smooth gap-6 pb-6 px-4 scrollbar-hide snap-x snap-mandatory"
-        >
-          {products.slice(0, 6).map((item, index) => {
-            return (
+        {/* ── PRODUCT GRID MATRIX ── */}
+        {!loading && products.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+            {products.map((item) => (
               <div 
                 key={item.id} 
-                className="flex flex-col gap-3 cursor-pointer group relative p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.03)] hover:bg-white/60 hover:border-white/80 transition-all duration-500 ease-out w-[240px] sm:w-[280px] flex-shrink-0 snap-start"
+                className="flex flex-col gap-3 cursor-pointer group relative p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.03)] hover:bg-white/60 hover:border-white/80 transition-all duration-500 ease-out"
               >
-                {/* Tall Portrait Crop Canvas Container Shell */}
+                {/* Image Container */}
                 <div className="relative aspect-[4/5] bg-[#e8e4dc] overflow-hidden rounded-lg shadow-sm">
                   
                   {/* Wishlist Toggle Action Pin */}
@@ -198,9 +180,9 @@ export default function ProductCollection() {
                   </div>
                 </div>
 
-                {/* Text Metadata Labels */}
-                <div className="flex flex-col gap-0.5 text-left font-['DM_Sans'] px-1 pb-1" onClick={() => handleOpenDetailView(item)}>
-                  <h4 className="text-[0.8rem] font-medium text-[#1a1a1a]/90 tracking-wide line-clamp-1 group-hover:text-[#b5862a] transition-colors duration-300 capitalize">
+                {/* Text Metadata */}
+                <div className="flex flex-col gap-0.5 text-left px-1 pb-1" onClick={() => handleOpenDetailView(item)}>
+                  <h4 className="text-[0.85rem] font-medium text-[#1a1a1a]/90 tracking-wide line-clamp-1 group-hover:text-[#b5862a] transition-colors duration-300 capitalize">
                     {item.name}
                   </h4>
                   <p className="text-[0.8rem] font-bold text-[#b5862a] tracking-wider mt-0.5">
@@ -208,22 +190,11 @@ export default function ProductCollection() {
                   </p>
                 </div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* 🔥 ROUTE REDIRECTION BUTTON: Navigate directly to full Collections page */}
-        {products.length > 6 && (
-          <div className="w-full flex justify-center mt-8">
-            <button 
-              onClick={() => navigate('/collections')}
-              className="px-10 py-3 border-2 border-[#b5862a] text-[#b5862a] font-bold text-[0.7rem] tracking-[0.25em] uppercase hover:bg-[#b5862a] hover:text-white transition-all duration-400 rounded-sm bg-transparent shadow-sm"
-            >
-              Explore Full Collection
-            </button>
+            ))}
           </div>
         )}
-      </section>
+
+      </div>
 
       {/* ====================================================================
           SECTION B: MASTER FIXED GLASS ACORDION OVERLAY MODAL SHEET VIEW
@@ -234,11 +205,11 @@ export default function ProductCollection() {
           <div className="w-full max-w-[1300px] bg-[#f7f4ef]/95 backdrop-blur-lg text-[#1a1a1a] p-6 md:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.15)] rounded-2xl border border-white/50 relative mt-4 animate-sheet-slide mb-12 select-text">
             
             {/* Modal Internal Navigation Header Controls */}
-            <div className="w-full mb-8 flex items-center justify-between border-b border-[#e8e2d8] pb-4 font-['DM_Sans']">
+            <div className="w-full mb-8 flex items-center justify-between border-b border-[#e8e2d8] pb-4">
               <div className="flex items-center gap-2 text-[0.7rem] tracking-[0.2em] text-[#b5862a] uppercase font-bold">
                 <span>Collections</span>
                 <ChevronRight size={11} className="text-neutral-400" />
-                <span className="text-[#1a1a1a] capitalize">{selectedProduct.category || 'Sunkissed Stories'}</span>
+                <span className="text-[#1a1a1a] capitalize">{selectedProduct.categories?.name || pageTitle}</span>
               </div>
               <button 
                 onClick={() => setSelectedProduct(null)}
@@ -264,7 +235,7 @@ export default function ProductCollection() {
                           idx === activeImgIndex ? 'border-[#b5862a] scale-95 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <img src={imgUrl} alt={`Thumbnail state slot ${idx}`} className="w-full h-full object-cover object-top" />
+                        <img src={imgUrl} alt={`Thumbnail slot ${idx}`} className="w-full h-full object-cover object-top" />
                       </button>
                     ))
                   ) : (
@@ -286,7 +257,7 @@ export default function ProductCollection() {
               </div>
 
               {/* ── RIGHT CELL: BOUTIQUE METADATA CONTROLS TERMINALS PANEL ── */}
-              <div className="lg:col-span-5 flex flex-col gap-5 text-left w-full font-['DM_Sans']">
+              <div className="lg:col-span-5 flex flex-col gap-5 text-left w-full">
                 
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex flex-col gap-1.5">
@@ -367,7 +338,7 @@ export default function ProductCollection() {
                 </div>
 
                 {/* Long Text Descriptions Block Section */}
-                <p className="text-[0.9rem] font-light text-neutral-600 leading-relaxed font-body mt-2">
+                <p className="text-[0.9rem] font-light text-neutral-600 leading-relaxed mt-2">
                   {selectedProduct.description}
                 </p>
 

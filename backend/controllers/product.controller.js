@@ -18,18 +18,47 @@ const generateCleanSlug = (text) => {
 // ====================================================================
 
 // 1. Fetch filtered and sorted products for frontend catalog viewports
+// ====================================================================
+// 👥 CLIENT FACING OPERATIONS (PUBLIC CATALOG CHANNELS)
+// ====================================================================
+
+// 1. Fetch filtered and sorted products for frontend catalog viewports
 exports.getPublicProducts = async (req, res, next) => {
   try {
     const { category, sort, minPrice, maxPrice, isFeatured, isNewArrival } = req.query;
     
+    // 🔥 FIX 1: Added category_id and categories(id, name, slug) to the select query!
     // Explicit selection ignores internal parameters like cost_price for security leaks
     let queryBuilder = supabase
       .from('products')
-      .select('id, name, slug, sku, description, images, price, discount_price, variants, bullet_points, model_info, is_featured, is_bestseller, is_new_arrival')
+      .select('id, name, slug, sku, description, images, price, discount_price, variants, bullet_points, model_info, is_featured, is_bestseller, is_new_arrival, category_id, categories(id, name, slug)')
       .eq('is_hidden', false);
 
+    // 🔥 FIX 2: SMART CATEGORY FILTER (Handles both Numbers and Strings perfectly)
+    if (category) {
+      const isNumericId = /^\d+$/.test(category);
+      
+      if (isNumericId) {
+        // If frontend sends an exact Category ID
+        queryBuilder = queryBuilder.eq('category_id', parseInt(category));
+      } else {
+        // If frontend sends a Category Slug or Name (e.g., "sunkissed-stories" or "Summer Collection")
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('id')
+          .or(`slug.eq.${category},name.ilike.${category}`)
+          .maybeSingle();
+
+        if (catData) {
+          queryBuilder = queryBuilder.eq('category_id', catData.id);
+        } else {
+          // If category name doesn't exist, return empty array cleanly without crashing
+          return res.status(200).json({ success: true, count: 0, products: [] });
+        }
+      }
+    }
+
     // Apply strict schema filters natively
-    if (category) queryBuilder = queryBuilder.eq('category_id', category);
     if (isFeatured) queryBuilder = queryBuilder.eq('is_featured', isFeatured === 'true');
     if (isNewArrival) queryBuilder = queryBuilder.eq('is_new_arrival', isNewArrival === 'true');
     if (minPrice) queryBuilder = queryBuilder.gte('price', Number(minPrice));
@@ -102,7 +131,6 @@ exports.getProductDetailMasterDispatcher = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-
 // ====================================================================
 // 👑 ADMINISTRATIVE CRM MODULES (SECURED EXECUTIVE CONTROL PANEL)
 // ====================================================================
@@ -111,7 +139,7 @@ exports.getProductDetailMasterDispatcher = async (req, res, next) => {
 exports.adminCreateProduct = async (req, res, next) => {
   try {
     const { 
-      name, slug, sku, description, images, category_id, variants, 
+      name, slug, sku, description, images, category_name, variants, // 🔥 category_name from frontend
       bullet_points, model_info, price, cost_price, discount_price, 
       is_featured, is_bestseller, is_new_arrival, is_hidden, tags 
     } = req.body;
@@ -121,6 +149,31 @@ exports.adminCreateProduct = async (req, res, next) => {
         success: false,
         message: "Mandatory system entries missing. Provide Name, SKU, Price, and Cost Price configurations."
       });
+    }
+
+    // 🔥 SMART CATEGORY INTERCEPTOR
+    let finalCategoryId = null;
+    if (category_name && category_name.trim() !== '') {
+      const cleanCatName = category_name.trim();
+      
+      // Case-insensitive check if category exists
+      const { data: existingCat } = await supabase
+        .from('categories')
+        .select('id')
+        .ilike('name', cleanCatName)
+        .maybeSingle();
+      
+      if (existingCat) {
+        finalCategoryId = existingCat.id;
+      } else {
+        // Create new category dynamically
+        const { data: newCat } = await supabase
+          .from('categories')
+          .insert([{ name: cleanCatName, slug: generateCleanSlug(cleanCatName) }])
+          .select('id')
+          .single();
+        if (newCat) finalCategoryId = newCat.id;
+      }
     }
 
     const computedSlug = slug ? generateCleanSlug(slug) : generateCleanSlug(name);
@@ -133,10 +186,10 @@ exports.adminCreateProduct = async (req, res, next) => {
         sku: sku.toUpperCase().trim(),
         description: description || '',
         images: images || [],
-        category_id: category_id ? parseInt(category_id) : null,
-        variants: variants || [],          // Ingests array-objects into PostgreSQL JSONB block natively
-        bullet_points: bullet_points || [], // Custom technical descriptions array
-        model_info: model_info || {},       // Height, wear sizes matrix
+        category_id: finalCategoryId, // 🔥 Uses dynamically resolved ID
+        variants: variants || [],         
+        bullet_points: bullet_points || [], 
+        model_info: model_info || {},       
         price: parseFloat(price),
         cost_price: parseFloat(cost_price),
         discount_price: discount_price ? parseFloat(discount_price) : null,
@@ -167,7 +220,6 @@ exports.adminUpdateProduct = async (req, res, next) => {
     
     const sanitizedPayload = {};
     
-    // Type casting and sanitization matrix alignments
     if (updatePayload.name !== undefined) {
       sanitizedPayload.name = updatePayload.name.trim();
       if (!updatePayload.slug) sanitizedPayload.slug = generateCleanSlug(updatePayload.name);
@@ -175,24 +227,43 @@ exports.adminUpdateProduct = async (req, res, next) => {
     if (updatePayload.slug !== undefined) sanitizedPayload.slug = generateCleanSlug(updatePayload.slug);
     if (updatePayload.sku !== undefined) sanitizedPayload.sku = updatePayload.sku.toUpperCase().trim();
     if (updatePayload.description !== undefined) sanitizedPayload.description = updatePayload.description;
-
     if (updatePayload.price !== undefined) sanitizedPayload.price = parseFloat(updatePayload.price);
     if (updatePayload.cost_price !== undefined) sanitizedPayload.cost_price = parseFloat(updatePayload.cost_price);
-    if (updatePayload.discount_price !== undefined) {
-      sanitizedPayload.discount_price = updatePayload.discount_price ? parseFloat(updatePayload.discount_price) : null;
-    }
-
+    if (updatePayload.discount_price !== undefined) sanitizedPayload.discount_price = updatePayload.discount_price ? parseFloat(updatePayload.discount_price) : null;
     if (updatePayload.is_featured !== undefined) sanitizedPayload.is_featured = !!updatePayload.is_featured;
     if (updatePayload.is_bestseller !== undefined) sanitizedPayload.is_bestseller = !!updatePayload.is_bestseller;
     if (updatePayload.is_new_arrival !== undefined) sanitizedPayload.is_new_arrival = !!updatePayload.is_new_arrival;
     if (updatePayload.is_hidden !== undefined) sanitizedPayload.is_hidden = !!updatePayload.is_hidden;
-
     if (updatePayload.images !== undefined) sanitizedPayload.images = updatePayload.images;
     if (updatePayload.variants !== undefined) sanitizedPayload.variants = updatePayload.variants;
     if (updatePayload.bullet_points !== undefined) sanitizedPayload.bullet_points = updatePayload.bullet_points;
     if (updatePayload.model_info !== undefined) sanitizedPayload.model_info = updatePayload.model_info;
     if (updatePayload.tags !== undefined) sanitizedPayload.tags = updatePayload.tags;
-    if (updatePayload.category_id !== undefined) sanitizedPayload.category_id = updatePayload.category_id ? parseInt(updatePayload.category_id) : null;
+
+    // 🔥 SMART CATEGORY INTERCEPTOR FOR UPDATES
+    if (updatePayload.category_name !== undefined) {
+      if (updatePayload.category_name.trim() === '') {
+        sanitizedPayload.category_id = null;
+      } else {
+        const cleanCatName = updatePayload.category_name.trim();
+        const { data: existingCat } = await supabase
+          .from('categories')
+          .select('id')
+          .ilike('name', cleanCatName)
+          .maybeSingle();
+        
+        if (existingCat) {
+          sanitizedPayload.category_id = existingCat.id;
+        } else {
+          const { data: newCat } = await supabase
+            .from('categories')
+            .insert([{ name: cleanCatName, slug: generateCleanSlug(cleanCatName) }])
+            .select('id')
+            .single();
+          if (newCat) sanitizedPayload.category_id = newCat.id;
+        }
+      }
+    }
 
     sanitizedPayload.updated_at = new Date().toISOString();
 
@@ -255,12 +326,20 @@ exports.adminGetFullCatalog = async (req, res, next) => {
 exports.getProductById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    
+    // 🔥 THE GOD-MODE SHIELD: Safe redirection if express misroutes 'all-catalog'
+    const isNumericId = /^\d+$/.test(id);
+    if (!isNumericId) {
+      if (id === 'all-catalog') return exports.adminGetFullCatalog(req, res, next);
+      return res.status(400).json({ success: false, message: "Invalid numeric ID format." });
+    }
+
     console.log(`[ATELIER ENGINE]: Querying database blueprints for item ID: ${id}`);
 
     const { data: product, error } = await supabase
       .from('products')
       .select('*, categories(*)')
-      .eq('id', id)
+      .eq('id', Number(id))
       .maybeSingle();
 
     if (error) {

@@ -42,7 +42,6 @@ function ProductTable({ catalog, onEdit, onDelete, onToggleVisibility }) {
 
                 return (
                   <tr key={product.id} className={`hover:bg-neutral-50/80 transition-colors ${product.is_hidden ? 'opacity-50 bg-neutral-50/40' : ''}`}>
-                    {/* Thumbnail */}
                     <td className="p-5">
                       <div className="w-16 h-20 bg-neutral-100 border border-neutral-200 rounded-lg overflow-hidden relative flex-shrink-0 shadow-sm">
                         {product.images?.[0] ? (
@@ -52,26 +51,20 @@ function ProductTable({ catalog, onEdit, onDelete, onToggleVisibility }) {
                         )}
                       </div>
                     </td>
-
-                    {/* Name & Category */}
                     <td className="p-5 max-w-xs">
                       <div className="flex flex-col gap-1 text-left">
                         <span className="font-semibold text-neutral-900 text-base line-clamp-2" title={product.name}>{product.name}</span>
-                        <span className="text-sm text-neutral-500 font-normal truncate">
-                          {product.categories?.name || 'Unassigned Category'}
+                        <span className="text-sm text-[#b5862a] font-medium truncate">
+                          {product.categories?.name || 'Unassigned Collection'}
                         </span>
                       </div>
                     </td>
-
-                    {/* SKU & Slug */}
                     <td className="p-5">
                       <div className="flex flex-col gap-1 text-left font-mono text-sm">
                         <span className="font-bold text-neutral-800 select-all">{product.sku}</span>
                         <span className="text-xs text-neutral-400 truncate max-w-[180px]">{product.slug}</span>
                       </div>
                     </td>
-
-                    {/* Financials */}
                     <td className="p-5">
                       <div className="flex flex-col text-left text-sm gap-1">
                         <div className="font-medium text-neutral-900">
@@ -84,8 +77,6 @@ function ProductTable({ catalog, onEdit, onDelete, onToggleVisibility }) {
                         </div>
                       </div>
                     </td>
-
-                    {/* Inventory */}
                     <td className="p-5">
                       <div className="flex flex-col gap-1.5 text-left">
                         <span className={`text-sm font-bold ${totalStock > 10 ? 'text-neutral-800' : totalStock > 0 ? 'text-amber-600' : 'text-red-600'}`}>
@@ -100,8 +91,6 @@ function ProductTable({ catalog, onEdit, onDelete, onToggleVisibility }) {
                         </div>
                       </div>
                     </td>
-
-                    {/* Badges */}
                     <td className="p-5">
                       <div className="flex flex-wrap gap-2 items-center justify-start max-w-[140px]">
                         {product.is_featured && <span className="text-[10px] font-bold bg-[#b5862a]/10 text-[#b5862a] border border-[#b5862a]/20 px-2 py-1 rounded-md uppercase tracking-wider">Featured</span>}
@@ -109,8 +98,6 @@ function ProductTable({ catalog, onEdit, onDelete, onToggleVisibility }) {
                         {product.is_new_arrival && <span className="text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-md uppercase tracking-wider">New</span>}
                       </div>
                     </td>
-
-                    {/* Actions */}
                     <td className="p-5 text-right">
                       <div className="flex justify-end items-center gap-2">
                         <button type="button" onClick={() => onToggleVisibility(product)} className="p-2.5 text-neutral-500 hover:text-neutral-900 bg-neutral-50 hover:bg-neutral-200 transition-colors rounded-lg border border-neutral-200" title={product.is_hidden ? "Un-hide product" : "Hide product"}>
@@ -141,7 +128,8 @@ function ProductTable({ catalog, onEdit, onDelete, onToggleVisibility }) {
 function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) {
   const [formData, setFormData] = useState({
     name: '', slug: '', sku: '', description: '', price: '', cost_price: '', discount_price: '',
-    category_id: '', is_featured: false, is_bestseller: false, is_new_arrival: true, is_hidden: false,
+    category_name: '', // 🔥 Handling String values natively instead of strict IDs
+    is_featured: false, is_bestseller: false, is_new_arrival: true, is_hidden: false,
     images: [], variants: [], bullet_points: [], model_info: { height: '', bust: '', waist: '', wears: '' }, tags: []
   });
 
@@ -154,6 +142,7 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
     if (editProduct) {
       setFormData({
         ...editProduct,
+        category_name: editProduct.categories?.name || '', // Extract existing category name string
         images: Array.isArray(editProduct.images) ? editProduct.images : [],
         variants: Array.isArray(editProduct.variants) ? editProduct.variants : [],
         bullet_points: Array.isArray(editProduct.bullet_points) ? editProduct.bullet_points : [],
@@ -165,11 +154,12 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
     } else {
       setFormData({
         name: '', slug: '', sku: '', description: '', price: '', cost_price: '', discount_price: '',
-        category_id: categories[0]?.id || '', is_featured: false, is_bestseller: false, is_new_arrival: true, is_hidden: false,
+        category_name: '', // Default empty string to type freely
+        is_featured: false, is_bestseller: false, is_new_arrival: true, is_hidden: false,
         images: [], variants: [], bullet_points: [], model_info: { height: '', bust: '', waist: '', wears: '' }, tags: []
       });
     }
-  }, [editProduct, isOpen, categories]);
+  }, [editProduct, isOpen]);
 
   if (!isOpen) return null;
 
@@ -193,12 +183,9 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
               <p className="text-xs uppercase font-bold tracking-widest text-neutral-500 mt-1">Relational Schema Operations Panel</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-2.5 text-neutral-400 hover:text-red-600 bg-white border border-neutral-200 rounded-full hover:bg-red-50 hover:border-red-200 transition-all shadow-sm">
-            <X size={20} />
-          </button>
+          <button type="button" onClick={onClose} className="p-2.5 text-neutral-400 hover:text-red-600 bg-white border border-neutral-200 rounded-full hover:bg-red-50 hover:border-red-200 transition-all shadow-sm"><X size={20} /></button>
         </div>
 
-        {/* Dynamic Parameter Configurations Body Form Scroller Section */}
         <form onSubmit={handleSubmit} className="p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-full text-sm">
           
           {/* LEFT COMPACT HALF: CENTRAL SPECIFICATIONS STRINGS META */}
@@ -217,15 +204,28 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs uppercase font-bold tracking-wider text-neutral-500">Semantic Slug (Optional)</label>
-                <input type="text" value={formData.slug} onChange={(e) => setFormData(p => ({ ...p, slug: e.target.value }))} placeholder="auto-generated-if-blank" className="w-full bg-neutral-50 border border-neutral-300 p-3.5 text-base rounded-lg focus:outline-none focus:border-[#b5862a] font-mono text-neutral-500" />
+                <input type="text" value={formData.slug} onChange={(e) => setFormData(p => ({ ...p, slug: e.target.value }))} placeholder="auto-generated" className="w-full bg-neutral-50 border border-neutral-300 p-3.5 text-base rounded-lg focus:outline-none focus:border-[#b5862a] font-mono text-neutral-500" />
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 w-full">
-              <label className="text-xs uppercase font-bold tracking-wider text-neutral-500">Collection Mapping Category</label>
-              <select value={formData.category_id || ''} onChange={(e) => setFormData(p => ({ ...p, category_id: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-300 p-3.5 text-base rounded-lg focus:outline-none focus:border-[#b5862a] font-medium text-neutral-800">
-                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-              </select>
+            {/* 🔥 NEW AUTO-CREATE DATALIST FOR CATEGORIES */}
+            <div className="flex flex-col gap-1.5 w-full relative">
+              <label className="text-xs uppercase font-bold tracking-wider text-neutral-500 flex items-center gap-2">
+                Collection Mapping 
+                <span className="bg-[#b5862a]/10 text-[#b5862a] text-[9px] px-1.5 py-0.5 rounded border border-[#b5862a]/20">TYPE TO CREATE</span>
+              </label>
+              <input 
+                list="collection-list"
+                type="text" 
+                required
+                value={formData.category_name} 
+                onChange={(e) => setFormData(p => ({ ...p, category_name: e.target.value }))} 
+                placeholder="Type new collection name or select from list..." 
+                className="w-full bg-white border border-neutral-300 p-3.5 text-base font-bold text-neutral-800 rounded-lg focus:outline-none focus:border-[#b5862a] focus:ring-1 focus:ring-[#b5862a] transition-all" 
+              />
+              <datalist id="collection-list">
+                {categories.map((cat, idx) => <option key={idx} value={cat.name} />)}
+              </datalist>
             </div>
 
             <div className="flex flex-col gap-1.5 w-full">
@@ -251,22 +251,13 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
 
             <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#b5862a] border-b border-neutral-200 pb-2 flex items-center gap-2 mt-4 select-none"><Sliders size={18} /> Visibility & Badges</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-5 bg-neutral-50 border border-neutral-200 rounded-xl select-none">
-              <label className="flex items-center gap-3 cursor-pointer text-base font-medium text-neutral-800">
-                <input type="checkbox" checked={formData.is_featured} onChange={(e) => setFormData(p => ({ ...p, is_featured: e.target.checked }))} className="w-5 h-5 rounded border-neutral-300 text-[#b5862a] focus:ring-[#b5862a]" /> Featured Showcase
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer text-base font-medium text-neutral-800">
-                <input type="checkbox" checked={formData.is_bestseller} onChange={(e) => setFormData(p => ({ ...p, is_bestseller: e.target.checked }))} className="w-5 h-5 rounded border-neutral-300 text-purple-600 focus:ring-purple-600" /> Bestseller Tag
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer text-base font-medium text-neutral-800">
-                <input type="checkbox" checked={formData.is_new_arrival} onChange={(e) => setFormData(p => ({ ...p, is_new_arrival: e.target.checked }))} className="w-5 h-5 rounded border-neutral-300 text-green-600 focus:ring-green-600" /> New Arrival
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer text-base font-bold text-red-600">
-                <input type="checkbox" checked={formData.is_hidden} onChange={(e) => setFormData(p => ({ ...p, is_hidden: e.target.checked }))} className="w-5 h-5 rounded border-red-300 text-red-600 focus:ring-red-600" /> Hidden (Draft/Vault)
-              </label>
+              <label className="flex items-center gap-3 cursor-pointer text-base font-medium text-neutral-800"><input type="checkbox" checked={formData.is_featured} onChange={(e) => setFormData(p => ({ ...p, is_featured: e.target.checked }))} className="w-5 h-5 rounded border-neutral-300 text-[#b5862a] focus:ring-[#b5862a]" /> Featured Showcase</label>
+              <label className="flex items-center gap-3 cursor-pointer text-base font-medium text-neutral-800"><input type="checkbox" checked={formData.is_bestseller} onChange={(e) => setFormData(p => ({ ...p, is_bestseller: e.target.checked }))} className="w-5 h-5 rounded border-neutral-300 text-purple-600 focus:ring-purple-600" /> Bestseller Tag</label>
+              <label className="flex items-center gap-3 cursor-pointer text-base font-medium text-neutral-800"><input type="checkbox" checked={formData.is_new_arrival} onChange={(e) => setFormData(p => ({ ...p, is_new_arrival: e.target.checked }))} className="w-5 h-5 rounded border-neutral-300 text-green-600 focus:ring-green-600" /> New Arrival</label>
+              <label className="flex items-center gap-3 cursor-pointer text-base font-bold text-red-600"><input type="checkbox" checked={formData.is_hidden} onChange={(e) => setFormData(p => ({ ...p, is_hidden: e.target.checked }))} className="w-5 h-5 rounded border-red-300 text-red-600 focus:ring-red-600" /> Hidden (Vault)</label>
             </div>
           </div>
 
-          {/* RIGHT COMPACT HALF: HEAVY JSONB OBJECT ARRAYS PIPE MANAGERS */}
           <div className="flex flex-col gap-6 min-w-0">
             <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#b5862a] border-b border-neutral-200 pb-2 flex items-center gap-2 select-none"><Image size={18} /> Cloudinary Editorial Imagery Arrays</h3>
             <div className="w-full flex gap-3">
@@ -285,25 +276,10 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
             <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#b5862a] border-b border-neutral-200 pb-2 flex items-center gap-2 select-none mt-2"><Sliders size={18} /> Variants & Stock Matrix</h3>
             <div className="bg-[#f7f4ef]/80 p-5 rounded-xl border border-neutral-200 flex flex-col gap-4 shadow-sm">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Size</span>
-                  <input type="text" value={inputVariant.size} onChange={(e) => setInputVariant(p => ({ ...p, size: e.target.value }))} className="w-full bg-white border border-neutral-300 p-2.5 text-sm rounded-lg focus:outline-none focus:border-[#b5862a]" />
-                </div>
-                <div>
-                  <span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Stock Pcs</span>
-                  <input type="number" value={inputVariant.stock} onChange={(e) => setInputVariant(p => ({ ...p, stock: e.target.value }))} className="w-full bg-white border border-neutral-300 p-2.5 text-sm rounded-lg focus:outline-none focus:border-[#b5862a]" />
-                </div>
-                <div>
-                  <span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Color Label</span>
-                  <input type="text" value={inputVariant.colorName} onChange={(e) => setInputVariant(p => ({ ...p, colorName: e.target.value }))} className="w-full bg-white border border-neutral-300 p-2.5 text-sm rounded-lg focus:outline-none focus:border-[#b5862a]" />
-                </div>
-                <div>
-                  <span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Hex Code</span>
-                  <div className="flex gap-2 items-center bg-white border border-neutral-300 rounded-lg p-1.5 focus-within:border-[#b5862a]">
-                    <input type="color" value={inputVariant.colorHex} onChange={(e) => setInputVariant(p => ({ ...p, colorHex: e.target.value }))} className="w-8 h-8 p-0 bg-transparent border-0 cursor-pointer flex-shrink-0 rounded" />
-                    <input type="text" value={inputVariant.colorHex} onChange={(e) => setInputVariant(p => ({ ...p, colorHex: e.target.value }))} className="w-full bg-transparent border-none p-1 text-xs font-mono focus:outline-none" />
-                  </div>
-                </div>
+                <div><span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Size</span><input type="text" value={inputVariant.size} onChange={(e) => setInputVariant(p => ({ ...p, size: e.target.value }))} className="w-full bg-white border border-neutral-300 p-2.5 text-sm rounded-lg focus:outline-none focus:border-[#b5862a]" /></div>
+                <div><span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Stock Pcs</span><input type="number" value={inputVariant.stock} onChange={(e) => setInputVariant(p => ({ ...p, stock: e.target.value }))} className="w-full bg-white border border-neutral-300 p-2.5 text-sm rounded-lg focus:outline-none focus:border-[#b5862a]" /></div>
+                <div><span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Color Label</span><input type="text" value={inputVariant.colorName} onChange={(e) => setInputVariant(p => ({ ...p, colorName: e.target.value }))} className="w-full bg-white border border-neutral-300 p-2.5 text-sm rounded-lg focus:outline-none focus:border-[#b5862a]" /></div>
+                <div><span className="text-xs uppercase font-bold text-neutral-500 block mb-1.5">Hex Code</span><div className="flex gap-2 items-center bg-white border border-neutral-300 rounded-lg p-1.5 focus-within:border-[#b5862a]"><input type="color" value={inputVariant.colorHex} onChange={(e) => setInputVariant(p => ({ ...p, colorHex: e.target.value }))} className="w-8 h-8 p-0 bg-transparent border-0 cursor-pointer flex-shrink-0 rounded" /><input type="text" value={inputVariant.colorHex} onChange={(e) => setInputVariant(p => ({ ...p, colorHex: e.target.value }))} className="w-full bg-transparent border-none p-1 text-xs font-mono focus:outline-none" /></div></div>
               </div>
               <button type="button" onClick={() => { setFormData(p => ({ ...p, variants: [...p.variants, { ...inputVariant, stock: parseInt(inputVariant.stock) || 0 }] })); }} className="w-full bg-neutral-800 text-white py-3 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-[#b5862a] transition-colors">Commit Variant Node</button>
             </div>
@@ -353,7 +329,6 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
             </div>
           </div>
 
-          {/* Core Dispatch Execution Buttons Ribbon */}
           <div className="col-span-1 lg:col-span-2 border-t border-neutral-200 pt-6 mt-4 flex flex-col sm:flex-row justify-end gap-4 select-none">
             <button type="button" onClick={onClose} className="px-8 py-4 border border-neutral-300 rounded-lg text-sm font-bold uppercase tracking-widest text-neutral-600 hover:bg-neutral-100 transition-colors w-full sm:w-auto">Abort Changes</button>
             <button type="submit" className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 rounded-lg text-sm font-bold tracking-[0.2em] uppercase shadow-lg hover:bg-[#b5862a] transition-all w-full sm:w-auto">
@@ -368,7 +343,7 @@ function ProductModalForm({ isOpen, onClose, onSave, categories, editProduct }) 
 }
 
 // ====================================================================
-// 👑 MAIN MASTER ORCHESTRATOR COMPONENT (PRODUCT DASHBOARD CONTROL PANEL)
+// 👑 MAIN MASTER ORCHESTRATOR COMPONENT
 // ====================================================================
 export default function AdminProductDashboard() {
   const navigate = useNavigate();
@@ -391,12 +366,17 @@ export default function AdminProductDashboard() {
       if (catalogRes.data?.success) {
         setCatalog(catalogRes.data.catalog);
       }
-      if (categoriesRes.data) {
-        setCategories([{ id: 1, name: 'Sunkissed Stories Collection' }]);
+      
+      // 🔥 Extract unique categories directly from catalog to populate datalist dynamically
+      if (catalogRes.data?.catalog) {
+        const uniqueCats = new Map();
+        catalogRes.data.catalog.forEach(p => {
+          if (p.categories?.name) uniqueCats.set(p.categories.name, p.categories);
+        });
+        setCategories(Array.from(uniqueCats.values()));
       }
     } catch (err) {
       triggerNotification('error', 'Relational database lookup failed. Unable to fetch master design catalog registries.');
-      console.error("❌ [CATALOG COREGATE EXECUTION FAULT]:", err);
     } finally {
       setLoading(false);
     }
@@ -405,7 +385,6 @@ export default function AdminProductDashboard() {
   useEffect(() => {
     const adminToken = localStorage.getItem('adm_tk');
     if (!adminToken) {
-      console.warn("🚨 [SECURITY EVENT INTERCEPT]: Access block triggered.");
       navigate('/designer-studio-gate'); 
       return;
     }
@@ -477,49 +456,23 @@ export default function AdminProductDashboard() {
   return (
     <div className="w-full min-h-screen bg-[#f7f4ef] text-[#1a1a1a] font-['DM_Sans'] pt-24 pb-32 px-4 sm:px-8 lg:px-12 text-left overflow-x-hidden select-text">
       <div className="max-w-[1600px] mx-auto w-full block">
-        
-        {/* EDITORIAL CONTROL DESK HEADER SECTION */}
         <div className="w-full border-b border-[#e8e2d8] pb-8 mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 select-none">
           <div>
             <span className="text-xs tracking-[0.4em] uppercase text-[#b5862a] font-bold block mb-2">Kostume County Masters</span>
             <h1 className="font-['Playfair_Display'] text-4xl font-normal text-neutral-900">Couture Catalog Desk</h1>
           </div>
-          
-          <button
-            onClick={() => { setSelectedProduct(null); setIsModalOpen(true); }}
-            className="inline-flex items-center gap-3 bg-[#1a1a1a] text-white px-8 py-4 text-sm font-bold tracking-[0.2em] uppercase rounded-lg shadow-lg hover:bg-[#b5862a] transition-all duration-300 flex-shrink-0"
-          >
+          <button onClick={() => { setSelectedProduct(null); setIsModalOpen(true); }} className="inline-flex items-center gap-3 bg-[#1a1a1a] text-white px-8 py-4 text-sm font-bold tracking-[0.2em] uppercase rounded-lg shadow-lg hover:bg-[#b5862a] transition-all duration-300 flex-shrink-0">
             <Plus size={18} /> Ingest New Silhouette
           </button>
         </div>
-
-        {/* FEEDBACK STATUS REEL MESSAGE ALERTS */}
         {notification.message && (
-          <div className={`w-full p-5 mb-8 rounded-xl flex items-center gap-4 border text-base shadow-sm transition-all animate-fade-in ${
-            notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
-          }`}>
+          <div className={`w-full p-5 mb-8 rounded-xl flex items-center gap-4 border text-base shadow-sm transition-all animate-fade-in ${notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
             {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
             <p className="font-medium tracking-wide text-left">{notification.message}</p>
           </div>
         )}
-
-        {/* FACTORED COMPONENT 1: MASTER PRODUCT INDEX LISTINGS VIEW */}
-        <ProductTable 
-          catalog={catalog} 
-          onEdit={(prod) => { setSelectedProduct(prod); setIsModalOpen(true); }} 
-          onDelete={handleDeleteProduct} 
-          onToggleVisibility={handleToggleVisibility} 
-        />
-
-        {/* FACTORED COMPONENT 2: MASTER CONFIGURATION MODAL DIALOG ELEMENT */}
-        <ProductModalForm 
-          isOpen={isModalOpen} 
-          onClose={() => { setIsModalOpen(false); setSelectedProduct(null); }} 
-          onSave={handleSaveProduct} 
-          categories={categories} 
-          editProduct={selectedProduct} 
-        />
-
+        <ProductTable catalog={catalog} onEdit={(prod) => { setSelectedProduct(prod); setIsModalOpen(true); }} onDelete={handleDeleteProduct} onToggleVisibility={handleToggleVisibility} />
+        <ProductModalForm isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedProduct(null); }} onSave={handleSaveProduct} categories={categories} editProduct={selectedProduct} />
       </div>
     </div>
   );

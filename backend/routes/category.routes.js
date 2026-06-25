@@ -5,7 +5,8 @@ const {
   adminCreateCategory,
   adminUpdateCategory,
   adminDeleteCategory,
-  getAllCategories
+  getAllCategories,
+  
 } = require('../controllers/category.controller');
 const { verifyAdminClearance } = require('../middleware/auth.middleware');
 

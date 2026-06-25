@@ -27,52 +27,71 @@ function IdentityNavbarTab({ config, setConfig, newMenu, setNewMenu, onAddNavIte
     <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-8 items-start block min-w-0">
       
       {/* BRAND TEXT & THEME CONFIGS */}
-      <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left block">
-        <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3 block">Brand Core Identity</h3>
+      <div className="flex flex-col gap-8 w-full block">
         
-        <div className="flex flex-col gap-1.5 w-full block">
-          <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Branding Logo Text</label>
-          <input type="text" value={config?.logo_text || ''} onChange={(e) => setConfig(prev => ({ ...prev, logo_text: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
-        </div>
-
-        <div className="flex flex-col gap-1.5 w-full block">
-          <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Custom Logo Image URL</label>
-          <input type="text" value={config?.logo_image_url || ''} onChange={(e) => setConfig(prev => ({ ...prev, logo_image_url: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
-        </div>
-
-        <div className="flex flex-col gap-1.5 border-t border-neutral-100 pt-4 w-full block">
-          <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Copyright Text Manifesto</label>
-          <input type="text" value={config?.copyright_text || ''} onChange={(e) => setConfig(prev => ({ ...prev, copyright_text: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
-        </div>
-
-        {/* 🔗 SOCIAL MEDIA CONNECTIONS MATRIX (VERSION-PROOF INLINE RECTORS) */}
-        <div className="flex flex-col gap-4 border-t border-neutral-100 pt-5 mt-2 w-full block">
-          <h4 className="font-['Playfair_Display'] text-base font-medium text-[#b5862a] mb-1">Social Networks Architecture</h4>
+        {/* Core Identity */}
+        <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left block">
+          <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3 block">Brand Core Identity</h3>
           
           <div className="flex flex-col gap-1.5 w-full block">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 flex items-center gap-2">
-              <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500 font-mono font-bold">IG</span> 
-              Instagram URL Link
-            </label>
-            <input type="text" placeholder="https://instagram.com/brand" value={config?.social_links?.instagram || ''} onChange={(e) => setConfig(prev => ({ ...prev, social_links: { ...(prev.social_links || {}), instagram: e.target.value } }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Branding Logo Text</label>
+            <input type="text" value={config?.logo_text || ''} onChange={(e) => setConfig(prev => ({ ...prev, logo_text: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
           </div>
 
           <div className="flex flex-col gap-1.5 w-full block">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 flex items-center gap-2">
-              <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500 font-mono font-bold">FB</span> 
-              Facebook Profile Link
-            </label>
-            <input type="text" placeholder="https://facebook.com/brand" value={config?.social_links?.facebook || ''} onChange={(e) => setConfig(prev => ({ ...prev, social_links: { ...(prev.social_links || {}), facebook: e.target.value } }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Custom Logo Image URL</label>
+            <input type="text" value={config?.logo_image_url || ''} onChange={(e) => setConfig(prev => ({ ...prev, logo_image_url: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
           </div>
 
-          <div className="flex flex-col gap-1.5 w-full block">
-            <label className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 flex items-center gap-2">
-              <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500 font-mono font-bold">X</span> 
-              X / Twitter Handle Link
-            </label>
-            <input type="text" placeholder="https://x.com/brand" value={config?.social_links?.x || ''} onChange={(e) => setConfig(prev => ({ ...prev, social_links: { ...(prev.social_links || {}), x: e.target.value } }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+          <div className="flex flex-col gap-1.5 border-t border-neutral-100 pt-4 w-full block">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Copyright Text Manifesto</label>
+            <input type="text" value={config?.copyright_text || ''} onChange={(e) => setConfig(prev => ({ ...prev, copyright_text: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+          </div>
+          
+          {/* 🔗 SOCIAL MEDIA CONNECTIONS MATRIX */}
+          <div className="flex flex-col gap-4 border-t border-neutral-100 pt-5 mt-2 w-full block">
+            <h4 className="font-['Playfair_Display'] text-base font-medium text-[#b5862a] mb-1">Social Networks Architecture</h4>
+            
+            <div className="flex flex-col gap-1.5 w-full block">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 flex items-center gap-2">
+                <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500 font-mono font-bold">IG</span> Instagram URL Link
+              </label>
+              <input type="text" placeholder="https://instagram.com/brand" value={config?.social_links?.instagram || ''} onChange={(e) => setConfig(prev => ({ ...prev, social_links: { ...(prev.social_links || {}), instagram: e.target.value } }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+            </div>
+
+            <div className="flex flex-col gap-1.5 w-full block">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 flex items-center gap-2">
+                <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500 font-mono font-bold">FB</span> Facebook Profile Link
+              </label>
+              <input type="text" placeholder="https://facebook.com/brand" value={config?.social_links?.facebook || ''} onChange={(e) => setConfig(prev => ({ ...prev, social_links: { ...(prev.social_links || {}), facebook: e.target.value } }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+            </div>
+
+            <div className="flex flex-col gap-1.5 w-full block">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 flex items-center gap-2">
+                <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500 font-mono font-bold">X</span> X / Twitter Handle Link
+              </label>
+              <input type="text" placeholder="https://x.com/brand" value={config?.social_links?.x || ''} onChange={(e) => setConfig(prev => ({ ...prev, social_links: { ...(prev.social_links || {}), x: e.target.value } }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+            </div>
           </div>
         </div>
+
+        {/* 🔥 NEW SECTION: COLLECTION HIGHLIGHT SETTINGS */}
+        <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left block shadow-sm">
+          <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3 block">
+            Homepage Product Slider Settings
+          </h3>
+          
+          <div className="flex flex-col gap-1.5 w-full block">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Collection Header Title</label>
+            <input type="text" placeholder="e.g. Sunkissed Stories" value={config?.collection_title || ''} onChange={(e) => setConfig(prev => ({ ...prev, collection_title: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
+          </div>
+
+          <div className="flex flex-col gap-1.5 w-full block">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Collection Narrative Description</label>
+            <textarea rows={4} placeholder="Describe the vibe of this collection..." value={config?.collection_description || ''} onChange={(e) => setConfig(prev => ({ ...prev, collection_description: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a] font-light leading-relaxed resize-y" />
+          </div>
+        </div>
+
       </div>
 
       {/* DYNAMIC NAVIGATION LINK MATRIX */}
@@ -127,7 +146,7 @@ function IdentityNavbarTab({ config, setConfig, newMenu, setNewMenu, onAddNavIte
 }
 
 // ====================================================================
-// 📂 SUB-COMPONENT 2: HERO BANNER DESIGN MANAGER (🔥 FIXED COLUMNS GRID)
+// 📂 SUB-COMPONENT 2: HERO BANNER DESIGN MANAGER
 // ====================================================================
 function HeroSectionTab({ config, setConfig, newHeroImg, setNewHeroImg, onAddHeroImage, onRemoveHeroImage }) {
   const heroImages = Array.isArray(config?.hero_images) ? config.hero_images : [];
@@ -341,6 +360,7 @@ function FeaturesGridTab({ config, setConfig, newFeature, setNewFeature, onAddFe
           ))}
         </div>
       </div>
+      
     </div>
   );
 }
@@ -359,7 +379,8 @@ export default function AdminCMSDashboard() {
     logo_text: '', logo_image_url: '', accent_color_hex: '#C9A84C', bg_color_hex: '#EFECE3', text_color_hex: '#1A1A1A',
     navigation_menu: [], hero_eyebrow: '', hero_title_main: '', hero_title_highlight: '', hero_subtitle: '',
     hero_images: [], hero_cta_text_1: '', hero_cta_link_1: '', hero_cta_text_2: '', hero_cta_link_2: '',
-    copyright_text: '', features_list: [], social_links: { instagram: '', facebook: '', x: '' }
+    copyright_text: '', features_list: [], social_links: { instagram: '', facebook: '', x: '' },
+    collection_title: '', collection_description: '' // 🔥 Initialize new fields
   });
 
   const [newMenu, setNewMenu] = useState({ label: '', path: '/' });
@@ -387,7 +408,9 @@ export default function AdminCMSDashboard() {
             features_list: Array.isArray(res.data.features_list) ? res.data.features_list : [],
             social_links: res.data.social_links && typeof res.data.social_links === 'object' 
               ? { instagram: '', facebook: '', x: '', ...res.data.social_links }
-              : { instagram: '', facebook: '', x: '' }
+              : { instagram: '', facebook: '', x: '' },
+            collection_title: res.data.collection_title || '', // Fallback to empty string
+            collection_description: res.data.collection_description || ''
           });
         }
       } catch (err) {

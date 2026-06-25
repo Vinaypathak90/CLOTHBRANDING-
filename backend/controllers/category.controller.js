@@ -45,7 +45,7 @@ exports.getAllCategories = async (req, res, next) => {
     console.log("[ATELIER CATEGORIES]: Hydrating category trees directly from Supabase...");
     const { data: categories, error } = await supabase
       .from('categories')
-      .select('*')
+      .select('id, name, slug, image_url')
       .order('display_order', { ascending: true });
 
     if (error) throw error;
@@ -151,3 +151,4 @@ exports.adminDeleteCategory = async (req, res, next) => {
     });
   } catch (err) { next(err); }
 };
+

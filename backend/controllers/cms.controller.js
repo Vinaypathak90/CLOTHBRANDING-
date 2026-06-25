@@ -42,7 +42,8 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
       logo_text, logo_image_url, accent_color_hex, bg_color_hex, text_color_hex, 
       navigation_menu, copyright_text, social_links,
       hero_eyebrow, hero_title_main, hero_title_highlight, hero_subtitle, 
-      hero_images, hero_cta_text_1, hero_cta_link_1, hero_cta_text_2, hero_cta_link_2, features_list
+      hero_images, hero_cta_text_1, hero_cta_link_1, hero_cta_text_2, hero_cta_link_2, features_list,
+      collection_title, collection_description // ✅ Extracted from frontend
     } = req.body;
 
     const updatePayload = {};
@@ -65,8 +66,12 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
     if (hero_cta_text_2 !== undefined) updatePayload.hero_cta_text_2 = hero_cta_text_2.trim();
     if (hero_cta_link_2 !== undefined) updatePayload.hero_cta_link_2 = hero_cta_link_2.trim();
 
+    // 🔥 THE FIX IS HERE: Injecting the missing collection fields into the database payload
+    if (collection_title !== undefined) updatePayload.collection_title = collection_title.trim();
+    if (collection_description !== undefined) updatePayload.collection_description = collection_description.trim();
+
     // ====================================================================
-    // 🔥 CRITICAL ARRAY AND JSONB HANDLERS (Ensures clean state deletions)
+    // CRITICAL ARRAY AND JSONB HANDLERS (Ensures clean state deletions)
     // ====================================================================
     if (navigation_menu !== undefined) {
       updatePayload.navigation_menu = Array.isArray(navigation_menu) ? navigation_menu : [];
@@ -108,7 +113,7 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
   } catch (err) { 
     next(err); 
   }
-}; // ✅ Broken comment tags removed cleanly from here!
+};
 
 // ====================================================================
 // 🟦 3. ADD / INITIALIZE: FACTORY RESET SEEDER LAYER
@@ -162,7 +167,10 @@ exports.adminInitializeCMSManifest = async (req, res, next) => {
         { title: "High Quality Fabrics", description: "Our outfits are cut from premium fabrics with a fit so good, that it feels custom made, just for you." },
         { title: "Free Shipping", description: "Free shipping is available on all prepaid orders above 1500 within India." },
         { title: "In-House Production", description: "We have full control over the quality of products since we are one of the few brands that designs & produces its own garment." }
-      ]
+      ],
+      // 🔥 THE FIX IS HERE: Hardcoded strings instead of calling undefined payload variable
+      collection_title: 'Sunkissed Stories',
+      collection_description: 'Sunkissed Stories is a love letter to golden hours, carefree getaways, and sun-drenched memories.',
     };
 
     const { data, error } = await supabase
@@ -194,7 +202,6 @@ exports.adminSecretLogin = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Credential parameters are mandatory." });
     }
 
-    // Exact environment matching execution
     if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
       
       const token = jwt.sign(
