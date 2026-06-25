@@ -43,7 +43,7 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
       navigation_menu, copyright_text, social_links,
       hero_eyebrow, hero_title_main, hero_title_highlight, hero_subtitle, 
       hero_images, hero_cta_text_1, hero_cta_link_1, hero_cta_text_2, hero_cta_link_2, features_list,
-      collection_title, collection_description // ✅ Extracted from frontend
+      collection_title, collection_description,new_arrivals_eyebrow, new_arrivals_title, new_arrivals_subtitle // ✅ Extracted from frontend
     } = req.body;
 
     const updatePayload = {};
@@ -69,7 +69,10 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
     // 🔥 THE FIX IS HERE: Injecting the missing collection fields into the database payload
     if (collection_title !== undefined) updatePayload.collection_title = collection_title.trim();
     if (collection_description !== undefined) updatePayload.collection_description = collection_description.trim();
-
+    // 🔥 NEW ARRIVALS SETTINGS
+    if (new_arrivals_eyebrow !== undefined) updatePayload.new_arrivals_eyebrow = new_arrivals_eyebrow.trim();
+    if (new_arrivals_title !== undefined) updatePayload.new_arrivals_title = new_arrivals_title.trim();
+    if (new_arrivals_subtitle !== undefined) updatePayload.new_arrivals_subtitle = new_arrivals_subtitle.trim();
     // ====================================================================
     // CRITICAL ARRAY AND JSONB HANDLERS (Ensures clean state deletions)
     // ====================================================================

@@ -22,6 +22,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminProductDashboard from './pages/admin/AdminProductDashboard';
 import CategoryPage from './pages/shop/CategoryPage';
 import Collections from './pages/shop/CollectionsPage';
+import NewArrivals from './pages/shop/NewArrivals';
 
 export default function App() {
   const { loading: cmsLoading } = useContext(CMSContext);
@@ -83,6 +84,7 @@ export default function App() {
             />
             <Route path="/collections" element={<CollectionsPage />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
+            <Route path="/new-arrivals" element={<NewArrivals />} />
              /* ========================================== */
             {/* 🔑 ADMIN ROUTES (Only Admin Users) */
             /* ========================================== */

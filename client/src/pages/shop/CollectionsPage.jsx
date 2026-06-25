@@ -136,7 +136,8 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#f7f4ef] text-[#1a1a1a] font-['DM_Sans'] pt-28 pb-32 px-4 sm:px-6 lg:px-8">
+    // 🔥 FIX 1: Reduced pt-28 to pt-12 md:pt-16 to pull content closer to navbar
+    <div className="w-full min-h-screen bg-[#f7f4ef] text-[#1a1a1a] font-['DM_Sans'] pt-12 md:pt-16 pb-32 px-4 sm:px-6 lg:px-8">
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes sheetSlideIn {
@@ -151,7 +152,8 @@ export default function CollectionsPage() {
       <div className="max-w-[1600px] mx-auto">
         
         {/* HEADER COLLECTION BANNER BLOCK */}
-        <div className="text-center mb-16 select-none">
+        {/* 🔥 FIX 2: Reduced mb-16 to mb-8 for tighter spacing */}
+        <div className="text-center mb-8 select-none mt-6">
           <span className="text-[0.65rem] tracking-[0.4em] uppercase text-[#b5862a] font-bold block mb-2">Preeti Haute Couture</span>
           <h1 className="font-['Playfair_Display'] text-3xl md:text-5xl font-normal tracking-wide">{labels.title}</h1>
           <p className="text-neutral-500 font-light text-xs md:text-sm max-w-xl mx-auto mt-3 leading-relaxed">{labels.subtitle}</p>
@@ -159,7 +161,8 @@ export default function CollectionsPage() {
         </div>
 
         {/* 🔍 THE BACKEND CONTROLLED SEARCH BAR */}
-        <div className="max-w-3xl mx-auto mb-16 relative shadow-xs">
+        {/* 🔥 FIX 3: Reduced mb-16 to mb-10 for tighter spacing above filters/grid */}
+        <div className="max-w-3xl mx-auto mb-10 relative shadow-sm">
           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input 
             type="text"
@@ -179,7 +182,8 @@ export default function CollectionsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           
           {/* SIDEBAR FILTER CRADLE (DESKTOP) */}
-          <div className="hidden lg:flex lg:col-span-3 flex-col gap-8 bg-white border border-[#e8e2d8] p-6 rounded-xl sticky top-28 shadow-xs text-left">
+          {/* 🔥 FIX 4: Adjusted sticky top-28 to top-20 so sidebar stays at a proper height when scrolling */}
+          <div className="hidden lg:flex lg:col-span-3 flex-col gap-8 bg-white border border-[#e8e2d8] p-6 rounded-xl sticky top-20 shadow-sm text-left">
             <div className="flex items-center gap-2 border-b border-neutral-100 pb-3 font-bold text-xs tracking-widest uppercase text-[#b5862a]">
               <SlidersHorizontal size={14} /> {labels.filterHeading}
             </div>
@@ -274,11 +278,11 @@ export default function CollectionsPage() {
                 <p className="text-sm text-neutral-400 font-light tracking-wide">{labels.emptyStateText}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-14 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12 w-full">
                 {filteredProducts.map((item) => (
                   <div 
                     key={item.id}
-                    onClick={() => handleOpenDetailView(item)} // 🔥 Clicking layout launches the explicit item detail matrix popup
+                    onClick={() => handleOpenDetailView(item)}
                     className="flex flex-col gap-4 cursor-pointer group relative p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.03)] hover:bg-white/60 hover:border-white/80 transition-all duration-500 ease-out"
                   >
                     {/* Tall Portrait Crop Image Frame Layout */}
@@ -298,7 +302,7 @@ export default function CollectionsPage() {
                         src={item.images && item.images.length > 0 ? item.images[0] : 'placeholder'} 
                         alt={item.name}
                         loading="lazy"
-                        className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-103 brightness-[0.99]"
+                        className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105 brightness-[0.99]"
                       />
 
                       <div 
@@ -310,7 +314,7 @@ export default function CollectionsPage() {
 
                     {/* Metadata Card Footer Labels */}
                     <div className="flex flex-col gap-0.5 text-left px-1 pb-1">
-                      <h4 className="text-[0.88rem] font-light text-[#1a1a1a]/90 tracking-wide line-clamp-1 group-hover:text-[#b5862a] transition-colors duration-300 capitalize">
+                      <h4 className="text-[0.88rem] font-medium text-[#1a1a1a]/90 tracking-wide line-clamp-1 group-hover:text-[#b5862a] transition-colors duration-300 capitalize">
                         {item.name}
                       </h4>
                       <p className="text-[0.85rem] font-bold text-[#b5862a] tracking-wider mt-0.5">

@@ -19,6 +19,7 @@ const inquiryRoutes = require('./routes/inquiry.routes');
 const cartRoutes = require('./routes/cart.routes');
 const cmsRoutes = require('./routes/cms.routes'); 
 const wishlistRoutes = require('./routes/wishlist.routes');
+const testimonialRoutes = require('./routes/testimonial.routes');
 
 // Initialize Express Engine Matrix
 const app = express();
@@ -93,6 +94,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/inquiries', inquiryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 
 // ==========================================
 // FALLBACK 404 HANDLER

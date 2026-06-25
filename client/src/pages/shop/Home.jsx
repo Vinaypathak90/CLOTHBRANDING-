@@ -3,6 +3,7 @@ import HeroSection from '../../components/shop/HeroSection';
 import FeaturesGrid from '../../components/shop/FeaturesGrid';
 import ProductCollection from '../../components/shop/ProductCollection';
 import CategoryShowcase from '../../components/shop/CategoryShowcase';
+import TestimonialSection from '../../components/shop/TestimonialSection';
 export default function Home() {
   return (
     <div className="w-full animate-fade-in">
@@ -15,6 +16,7 @@ export default function Home() {
      {/* 3. DYNAMIC PRODUCTS GALLERY & COUTURE DETAIL CANVAS TERMINAL */}
       <ProductCollection /> {/* 🔥 Step 2: Clear positioning right below trust values */}
      <CategoryShowcase />
+     <TestimonialSection />
      
     </div>
   );
