@@ -1,29 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
-import { RefreshCw, ArrowRight } from 'lucide-react';
+import { RefreshCw, ArrowRight, Image as ImageIcon } from 'lucide-react';
 
 export default function CategoryShowcase() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // High-End Editorial Fallback Images (Curated for Luxury Aesthetic)
-  const fallbackImages = [
-    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&q=90', // Golden Hour Hero
-    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=90', // Editorial Landscape
-    'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=90',  // Edgy Suiting
-    'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=90',  // Classic Elegance
-    'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=90'   // Dark Couture
-  ];
-
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const res = await axiosInstance.get('/categories/list');
+        // Cache-buster added so it always fetches fresh data from backend
+        const res = await axiosInstance.get(`/categories/list?t=${new Date().getTime()}`);
+        
         if (res.data && res.data.success) {
-          setCategories(res.data.categories);
+          // Strict filter to ensure deleted, inactive, or blank categories don't show up
+          const validCategories = res.data.categories.filter(cat => 
+            cat && 
+            cat.name && 
+            cat.name.trim() !== '' && 
+            cat.is_deleted !== true && 
+            cat.status !== 'inactive'
+          );
+          setCategories(validCategories);
         }
       } catch (err) {
         console.error("Failed to fetch categories grid:", err);
@@ -50,15 +51,10 @@ export default function CategoryShowcase() {
 
   // Function to assign dynamic asymmetrical grid sizes (The Premium Vogue Layout)
   const getEditorialGridClass = (index) => {
-    // Top Left Hero (Massive Block - Perfect Proportion)
     if (index === 0) return "md:col-span-2 lg:col-span-2 md:row-span-2 min-h-[380px] md:min-h-[500px]"; 
-    // Top Right Landscape (Wide Block)
     if (index === 1) return "md:col-span-2 lg:col-span-2 md:row-span-1 min-h-[250px] md:min-h-[240px]"; 
-    // Bottom Right Squares
     if (index === 2) return "md:col-span-1 lg:col-span-1 md:row-span-1 min-h-[250px] md:min-h-[240px]"; 
     if (index === 3) return "md:col-span-1 lg:col-span-1 md:row-span-1 min-h-[250px] md:min-h-[240px]"; 
-    
-    // Auto-flow for any extra categories
     return "md:col-span-1 lg:col-span-1 md:row-span-1 min-h-[250px] md:min-h-[240px]";
   };
 
@@ -82,26 +78,33 @@ export default function CategoryShowcase() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-auto gap-4 md:gap-5">
           {categories.map((cat, index) => {
             const gridClass = getEditorialGridClass(index);
-            const imgSource = (cat.image_url && cat.image_url.trim() !== '') 
-              ? cat.image_url 
-              : fallbackImages[index % fallbackImages.length];
+            
+            // Check if backend provided a valid image (either from category or inherited from product)
+            const hasImage = cat.image_url && cat.image_url.trim() !== '';
 
             return (
               <div 
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.slug)}
-                // Shadow upgraded for a floating, expensive look
                 className={`relative group overflow-hidden rounded-xl cursor-pointer bg-[#e8e4dc] shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(181,134,42,0.12)] transition-shadow duration-700 ease-out ${gridClass}`}
               >
-                {/* Buttery Smooth Super-Slow Pan & Zoom Image */}
-                <img 
-                  src={imgSource} 
-                  alt={cat.name} 
-                  loading="lazy"
-                  className="w-full h-full object-cover object-center transition-transform duration-[2000ms] cubic-bezier(0.25, 0.46, 0.45, 0.94) group-hover:scale-[1.08] group-hover:rotate-[0.5deg]"
-                />
                 
-                {/* 🔥 DEEP WARM OVERLAY: Uses a warmer dark tone (#0a0806) instead of pure black for a richer, sexier vibe */}
+                {/* DYNAMIC IMAGE OR LUXURY PLACEHOLDER */}
+                {hasImage ? (
+                  <img 
+                    src={cat.image_url} 
+                    alt={cat.name} 
+                    loading="lazy"
+                    className="w-full h-full object-cover object-center transition-transform duration-[2000ms] cubic-bezier(0.25, 0.46, 0.45, 0.94) group-hover:scale-[1.08] group-hover:rotate-[0.5deg]"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#e8e2d8] to-[#dcd5c9] text-neutral-400">
+                    <ImageIcon size={48} className="opacity-20 mb-2" />
+                    <span className="text-[9px] uppercase tracking-widest font-bold opacity-40">Awaiting Asset</span>
+                  </div>
+                )}
+                
+                {/* Deep Warm Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0806]/95 via-[#0a0806]/20 to-transparent opacity-60 group-hover:opacity-85 transition-opacity duration-700 pointer-events-none"></div>
 
                 {/* Sleek Cinematic Text Injection */}

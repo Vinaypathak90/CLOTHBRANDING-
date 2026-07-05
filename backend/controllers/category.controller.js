@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../config/db');
 
-
 // ==========================================
 // CLIENT FACING OPERATIONS (PUBLIC ROUTES)
 // ==========================================
@@ -9,15 +8,54 @@ const { supabase } = require('../config/db');
 // 1. Fetch all categories optimized by display order (for navigation menus and sidebars)
 exports.getPublicCategories = async (req, res, next) => {
   try {
-    // Select all categorical fields and bring along details if a parent category exists
-    const { data, error } = await supabase
+    // 🔥 FIX: Removed 'image_url' from products query. Only fetching 'images' array.
+    let { data, error } = await supabase
       .from('categories')
-      .select('id, name, slug, image_url, display_order, parent_id')
+      .select(`
+        id, name, slug, image_url, display_order, parent_id,
+        products ( images )
+      `)
       .order('display_order', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Relation fetch failed in getPublicCategories, falling back to basic category fetch.", error.message);
+      const fallback = await supabase
+        .from('categories')
+        .select('id, name, slug, image_url, display_order, parent_id')
+        .order('display_order', { ascending: true });
+      data = fallback.data || [];
+    }
 
-    return res.status(200).json(data);
+    // Strict Backend Filter & Smart Image Logic
+    const validData = (data || [])
+      .filter(cat => cat && cat.name && cat.name.trim() !== '')
+      .map(cat => {
+        let finalImageUrl = cat.image_url;
+
+        // 🔥 FIX: Logic updated to strictly use the 'images' array from products
+        if ((!finalImageUrl || finalImageUrl.trim() === '') && cat.products && cat.products.length > 0) {
+          const firstProduct = cat.products[0];
+          if (firstProduct.images && Array.isArray(firstProduct.images) && firstProduct.images.length > 0) {
+            finalImageUrl = firstProduct.images[0]; // Gets the first image of the product
+          }
+        }
+
+        return {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          image_url: finalImageUrl,
+          display_order: cat.display_order,
+          parent_id: cat.parent_id
+        };
+      });
+
+    // Anti-Caching Headers
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    return res.status(200).json(validData);
   } catch (err) { next(err); }
 };
 
@@ -40,19 +78,60 @@ exports.getCategoryBySlug = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// 3. Fetch all categories for showcase and general listing
 exports.getAllCategories = async (req, res, next) => {
   try {
-    console.log("[ATELIER CATEGORIES]: Hydrating category trees directly from Supabase...");
-    const { data: categories, error } = await supabase
+    console.log("[ATELIER CATEGORIES]: Hydrating category trees and fetching product fallbacks...");
+    
+    // 🔥 FIX: Removed 'image_url' from products query. Only fetching 'images' array.
+    let { data: categories, error } = await supabase
       .from('categories')
-      .select('id, name, slug, image_url')
+      .select(`
+        id, name, slug, image_url, display_order,
+        products ( images )
+      `)
       .order('display_order', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Relation fetch failed in getAllCategories, falling back to basic fetch.", error.message);
+      const fallback = await supabase
+        .from('categories')
+        .select('id, name, slug, image_url, display_order')
+        .order('display_order', { ascending: true });
+      categories = fallback.data || [];
+    }
+
+    // Strict Backend Filter & Smart Fallback Logic
+    const validCategories = (categories || [])
+      .filter(cat => cat && cat.name && cat.name.trim() !== '')
+      .map(cat => {
+        let finalImageUrl = cat.image_url;
+
+        // 🔥 FIX: Logic updated to strictly use the 'images' array from products
+        if ((!finalImageUrl || finalImageUrl.trim() === '') && cat.products && cat.products.length > 0) {
+          const firstProduct = cat.products[0];
+          if (firstProduct.images && Array.isArray(firstProduct.images) && firstProduct.images.length > 0) {
+            finalImageUrl = firstProduct.images[0]; // Gets the first image of the product
+          }
+        }
+
+        return {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          image_url: finalImageUrl, 
+          display_order: cat.display_order
+        };
+      });
+
+    // Anti-Caching Headers
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     return res.status(200).json({
       success: true,
-      categories: categories || []
+      categories: validCategories
     });
   } catch (err) {
     next(err);
@@ -63,7 +142,7 @@ exports.getAllCategories = async (req, res, next) => {
 // ADMIN CRM OPERATIONS (SECURE ROUTES)
 // ==========================================
 
-// 3. Admin Module: Instantiate a new Category node
+// 4. Admin Module: Instantiate a new Category node
 exports.adminCreateCategory = async (req, res, next) => {
   try {
     const { name, slug, image_url, display_order, parent_id } = req.body;
@@ -75,7 +154,7 @@ exports.adminCreateCategory = async (req, res, next) => {
         slug: slug.toLowerCase().trim(),
         image_url: image_url || '',
         display_order: display_order || 0,
-        parent_id: parent_id || null // Links subcategories natively
+        parent_id: parent_id || null
       }])
       .select('*')
       .single();
@@ -95,7 +174,7 @@ exports.adminCreateCategory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 4. Admin Module: Edit / Modify an existing classification layer
+// 5. Admin Module: Edit / Modify an existing classification layer
 exports.adminUpdateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -125,7 +204,7 @@ exports.adminUpdateCategory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 5. Admin Module: Purge / Hard Delete Execution Matrix
+// 6. Admin Module: Purge / Hard Delete Execution Matrix
 exports.adminDeleteCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -136,9 +215,9 @@ exports.adminDeleteCategory = async (req, res, next) => {
       .eq('id', id);
 
     if (error) {
-      // Handles PostgreSQL system dependency errors securely
       if (error.code === '23503') {
         return res.status(400).json({
+          success: false,
           message: 'Operation aborted: This node is currently referenced by active products. Re-route your inventory items first.'
         });
       }
@@ -151,4 +230,3 @@ exports.adminDeleteCategory = async (req, res, next) => {
     });
   } catch (err) { next(err); }
 };
-

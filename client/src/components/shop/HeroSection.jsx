@@ -57,7 +57,6 @@ export default function HeroSection() {
             transform: scale(1.15) translateX(4%) translateY(0px);
           }
         }
-        /* Yeh class sirf active image par chalegi jisse animation hamesha fresh start ho */
         .animate-active-slide-motion {
           animation: luxuryCoutureRightToLeft 9s ease-in-out infinite !important;
           will-change: transform;
@@ -91,84 +90,62 @@ export default function HeroSection() {
             <img 
               src={imgUrl} 
               alt={`Preeti Apparel Couture Slide ${idx}`}
-              className={`w-full h-full object-cover origin-center brightness-[0.95] ${
+              className={`w-full h-full object-cover origin-center ${
                 idx === currentSlide ? 'animate-active-slide-motion' : ''
               }`}
             />
           </div>
         ))}
         
-        {/* Scrim Overlay Mesh to preserve crisp typography contrast boundaries */}
+        {/* 🔥 FIX: Premium Cinematic Dark Overlay for 100% Text Legibility */}
         <div 
-          className="absolute inset-0 w-full h-full z-20 mix-blend-multiply" 
+          className="absolute inset-0 w-full h-full z-20 pointer-events-none" 
           style={{
-            background: 'linear-gradient(to bottom, rgba(239,236,227,0.4) 0%, rgba(239,236,227,0.75) 50%, rgba(239,236,227,0.4) 100%)'
+            background: 'linear-gradient(to bottom, rgba(10,8,6,0.6) 0%, rgba(10,8,6,0.2) 40%, rgba(10,8,6,0.7) 100%)'
           }}
         ></div>
       </div>
 
       {/* ====================================================================
-          EDITORIAL CENTER VIEW BOX CONTENT NODES (FULLY DYNAMIC)
+          EDITORIAL CENTER VIEW BOX CONTENT NODES (FULLY DYNAMIC & HIGH CONTRAST)
          ==================================================================== */}
       <div className="max-w-4xl text-center flex flex-col items-center gap-6 z-30 select-text pointer-events-auto mt-12 animate-editorial-fade">
         
         {/* Dynamic Eyebrow Node */}
-        <p 
-          style={{ color: 'var(--primary-accent, #C9A84C)' }}
-          className="text-[12px] md:text-[14px] font-semibold tracking-[0.4em] uppercase font-body"
-        >
+        <p className="text-[#D4AF37] text-[12px] md:text-[14px] font-semibold tracking-[0.4em] uppercase font-body drop-shadow-md">
           {eyebrow}
         </p>
 
         {/* Dynamic Master Large Uppercase Display Heading Case Title */}
-        <h1 
-          style={{ color: 'var(--text-luxury, #1A1A1A)' }}
-          className="text-4xl md:text-7xl lg:text-8xl font-normal tracking-tight font-display uppercase leading-[1.1] md:leading-none"
-        >
+        <h1 className="text-white text-4xl md:text-7xl lg:text-8xl font-normal tracking-tight font-display uppercase leading-[1.1] md:leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
           {titleMain} <br />
-          <span 
-            style={{ color: 'var(--primary-accent, #C9A84C)' }}
-            className="italic block font-light tracking-[0.06em] mt-4 lowercase text-3xl md:text-5xl lg:text-6xl"
-          >
+          <span className="text-[#D4AF37] italic block font-light tracking-[0.06em] mt-4 lowercase text-3xl md:text-5xl lg:text-6xl drop-shadow-lg">
             {titleHighlight}
           </span>
         </h1>
 
         {/* Dynamic Subtitle Matrix Text Node */}
-        <p 
-          style={{ color: 'var(--text-luxury, #1A1A1A)' }}
-          className="max-w-2xl text-[14px] md:text-[16px] font-light tracking-wide leading-relaxed font-body opacity-85 mt-2"
-        >
+        <p className="text-white/95 max-w-2xl text-[14px] md:text-[16px] font-light tracking-wide leading-relaxed font-body mt-2 drop-shadow-md">
           {subtitle}
         </p>
 
         {/* ====================================================================
-            LUXURY FASHION CTA TERMINALS CONTROL CLUSTER
+            LUXURY FASHION CTA TERMINALS CONTROL CLUSTER (FIXED HOVERS)
            ==================================================================== */}
         <div className="flex flex-col sm:flex-row items-center gap-6 mt-6 w-full sm:w-auto">
           
-          {/* Solid Primary Action Node Button */}
+          {/* Solid Primary Action Node Button (White to Gold) */}
           <a 
             href={ctaLink1}
-            style={{ 
-              backgroundColor: 'var(--text-luxury, #1A1A1A)',
-              color: 'var(--bg-luxury, #EFECE3)',
-              borderColor: 'var(--text-luxury, #1A1A1A)'
-            }}
-            className="w-full sm:w-auto text-[12px] tracking-[0.25em] font-semibold uppercase font-body px-10 py-4 border-2 transition-all duration-400 hover:shadow-xl hover:shadow-neutral-900/20 hover:-translate-y-0.5 active:translate-y-0 relative group overflow-hidden text-center"
+            className="w-full sm:w-auto text-[12px] tracking-[0.25em] font-bold uppercase font-body px-10 py-4 border-2 border-white bg-white text-black transition-all duration-400 hover:bg-[#D4AF37] hover:border-[#D4AF37] hover:text-white hover:shadow-[0_10px_30px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 active:translate-y-0 text-center relative group"
           >
             <span className="relative z-10">{ctaText1}</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-[var(--primary-accent,#C9A84C)] to-[#E5C158] opacity-0 group-hover:opacity-15 transition-opacity duration-300 z-0"></div>
           </a>
 
-          {/* Outline Editorial Secondary Button */}
+          {/* Outline Editorial Secondary Button (Transparent to White) */}
           <a 
             href={ctaLink2}
-            style={{ 
-              borderColor: 'var(--text-luxury, #1A1A1A)',
-              color: 'var(--text-luxury, #1A1A1A)'
-            }}
-            className="w-full sm:w-auto text-[12px] tracking-[0.25em] font-semibold uppercase font-body px-10 py-4 border-2 bg-transparent transition-all duration-400 hover:bg-[var(--text-luxury,#1A1A1A)] hover:text-[var(--bg-luxury,#EFECE3)] hover:shadow-xl hover:shadow-neutral-900/10 hover:-translate-y-0.5 active:translate-y-0 text-center relative group"
+            className="w-full sm:w-auto text-[12px] tracking-[0.25em] font-bold uppercase font-body px-10 py-4 border-2 border-white/80 text-white bg-transparent transition-all duration-400 hover:bg-white hover:text-black hover:border-white hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:translate-y-0 text-center relative group"
           >
             <span className="relative z-10 transition-colors duration-300">{ctaText2}</span>
           </a>
@@ -177,9 +154,9 @@ export default function HeroSection() {
       </div>
 
       {/* Editorial Vertical Scrolling Guide Hints Overlay Indicator */}
-      <div className="hidden md:flex absolute bottom-8 left-1/2 transform -translate-x-1/2 flex-col items-center gap-3 opacity-40 z-30 pointer-events-none select-none">
-        <div className="w-[1px] h-12 bg-neutral-900/60 animate-bounce"></div>
-        <span style={{ color: 'var(--text-luxury,#1A1A1A)' }} className="text-[9px] font-light tracking-[0.3em] uppercase font-body">Scroll</span>
+      <div className="hidden md:flex absolute bottom-8 left-1/2 transform -translate-x-1/2 flex-col items-center gap-3 opacity-60 z-30 pointer-events-none select-none">
+        <div className="w-[1px] h-12 bg-white/70 animate-bounce"></div>
+        <span className="text-white text-[9px] font-medium tracking-[0.3em] uppercase font-body drop-shadow-md">Scroll</span>
       </div>
 
     </section>
