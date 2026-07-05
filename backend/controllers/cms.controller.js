@@ -43,7 +43,9 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
       navigation_menu, copyright_text, social_links,
       hero_eyebrow, hero_title_main, hero_title_highlight, hero_subtitle, 
       hero_images, hero_cta_text_1, hero_cta_link_1, hero_cta_text_2, hero_cta_link_2, features_list,
-      collection_title, collection_description,new_arrivals_eyebrow, new_arrivals_title, new_arrivals_subtitle // ✅ Extracted from frontend
+      collection_title, collection_description,new_arrivals_eyebrow, new_arrivals_title, new_arrivals_subtitle,
+      contact_hero_title, contact_hero_subtitle, contact_email, 
+  contact_phone, contact_whatsapp, contact_address, contact_map_src // ✅ Extracted from frontend
     } = req.body;
 
     const updatePayload = {};
@@ -73,6 +75,13 @@ exports.adminUpdateCMSManifest = async (req, res, next) => {
     if (new_arrivals_eyebrow !== undefined) updatePayload.new_arrivals_eyebrow = new_arrivals_eyebrow.trim();
     if (new_arrivals_title !== undefined) updatePayload.new_arrivals_title = new_arrivals_title.trim();
     if (new_arrivals_subtitle !== undefined) updatePayload.new_arrivals_subtitle = new_arrivals_subtitle.trim();
+    if (contact_hero_title !== undefined) updatePayload.contact_hero_title = contact_hero_title.trim();
+if (contact_hero_subtitle !== undefined) updatePayload.contact_hero_subtitle = contact_hero_subtitle.trim();
+if (contact_email !== undefined) updatePayload.contact_email = contact_email.trim();
+if (contact_phone !== undefined) updatePayload.contact_phone = contact_phone.trim();
+if (contact_whatsapp !== undefined) updatePayload.contact_whatsapp = contact_whatsapp.trim();
+if (contact_address !== undefined) updatePayload.contact_address = contact_address.trim();
+if (contact_map_src !== undefined) updatePayload.contact_map_src = contact_map_src.trim();
     // ====================================================================
     // CRITICAL ARRAY AND JSONB HANDLERS (Ensures clean state deletions)
     // ====================================================================

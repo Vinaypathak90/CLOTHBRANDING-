@@ -23,6 +23,9 @@ import AdminProductDashboard from './pages/admin/AdminProductDashboard';
 import CategoryPage from './pages/shop/CategoryPage';
 import Collections from './pages/shop/CollectionsPage';
 import NewArrivals from './pages/shop/NewArrivals';
+// Agar file src/pages/shop folder mein Contact.jsx naam se hai, toh aise import karo:
+import ContactUs from './pages/shop/Contact';
+
 
 export default function App() {
   const { loading: cmsLoading } = useContext(CMSContext);
@@ -85,6 +88,8 @@ export default function App() {
             <Route path="/collections" element={<CollectionsPage />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route path="/new-arrivals" element={<NewArrivals />} />
+      <Route path="/contact" element={<ContactUs />} />
+
              /* ========================================== */
             {/* 🔑 ADMIN ROUTES (Only Admin Users) */
             /* ========================================== */

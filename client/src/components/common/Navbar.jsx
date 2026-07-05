@@ -26,19 +26,19 @@ const Navbar = () => {
   ];
 
   const logoText = cmsConfig?.logo_text || "PREETI CLOTHING";
-  const logoImage = cmsConfig?.logo_image_url || null;
+  const logoImage = cmsConfig?.logo_image_url?.trim() || null;
   
   const navigationMenu = cmsConfig?.navigation_menu && cmsConfig.navigation_menu.length > 0
     ? cmsConfig.navigation_menu
     : fashionOfflineDefaultLinks;
 
   useEffect(() => {
-    // Reset image load error tracker if database updates the asset URL
-    setImgFailed(false);
+    if (logoImage) {
+      setImgFailed(false);
+    }
   }, [logoImage]);
 
   useEffect(() => {
-    // Lockdown main background document scroll when responsive full drawer menu is active
     document.body.style.overflow = isMenuOpen ? 'hidden' : 'auto';
   }, [isMenuOpen]);
 
@@ -48,7 +48,6 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Cinematic brand skeletal shimmer loader layer while database handshake resolves
   if (loading) {
     return (
       <div className="w-full h-[76px] bg-[var(--bg-luxury,#EFECE3)] border-b border-neutral-900/5 animate-pulse flex items-center justify-between px-6 md:px-12">
@@ -66,21 +65,25 @@ const Navbar = () => {
       style={{ backgroundColor: 'var(--bg-luxury, #EFECE3)', borderColor: 'rgba(26,26,26,0.1)' }}
       className="fixed top-0 left-0 w-full z-50 border-b transition-all duration-500 shadow-sm"
     >
-      {/* Primary Structural Constrained View Box Container */}
       <div className="max-w-[1600px] mx-auto h-[76px] px-6 md:px-12 flex justify-between items-center relative">
         
-        {/* ==========================================
-            HAUTE COUTURE BRAND IDENTITY (LOGO MODULE)
-           ========================================== */}
+        {/* =========================================================
+            HAUTE COUTURE BRAND IDENTITY (🔥 OPTIMIZED CIRCULAR LOGO)
+           ========================================================= */}
         <Link to="/" className="flex items-center select-none z-50">
-          {!imgFailed && logoImage ? (
-            <img
-              src={logoImage}
-              alt={logoText}
-              className="h-10 w-auto object-contain transition-transform duration-300"
-              onError={() => setImgFailed(true)}
-            />
+          
+          {logoImage && !imgFailed ? (
+            /* 🔥 PREMIUM CIRCULAR FRAME: Image ko perfectly round badge me convert kiya hai */
+            <div className="relative flex items-center justify-center w-11 h-11 md:w-13 md:h-13 rounded-full overflow-hidden border border-[#b5862a]/40 bg-white/80 p-0.5 shadow-sm hover:scale-105 hover:border-[#b5862a] transition-all duration-300 ease-out transform-gpu">
+              <img
+                src={logoImage}
+                alt={logoText}
+                className="w-full h-full rounded-full object-cover contrast-[1.05]"
+                onError={() => setImgFailed(true)}
+              />
+            </div>
           ) : (
+            /* Fallback luxury text link only if image link breaks or is missing */
             <span 
               style={{ color: 'var(--text-luxury, #1A1A1A)' }}
               className="text-xl md:text-2xl font-semibold tracking-[0.12em] font-display uppercase italic transition-all hover:opacity-80"
@@ -88,6 +91,7 @@ const Navbar = () => {
               {logoText}
             </span>
           )}
+          
         </Link>
 
         {/* ==========================================
@@ -105,7 +109,6 @@ const Navbar = () => {
                 className="text-sm md:text-base font-medium tracking-[0.12em] uppercase font-display block py-2 transition-all duration-400 ease-in-out relative"
               >
                 {route.label}
-                {/* Horizontal slide micro overlay underline accent animation */}
                 <span 
                   style={{ backgroundColor: 'var(--primary-accent, #C9A84C)' }}
                   className={`absolute bottom-0 left-0 w-full h-[1.5px] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out origin-left ${
@@ -197,7 +200,6 @@ const Navbar = () => {
           >
             <ShoppingBag size={18} strokeWidth={1.5} className="group-hover:scale-110 transition-transform duration-300" />
             
-            {/* 🔥 FIXED OPTIMIZATION: Counter shifts to conditional dynamic render loop block */}
             {cartCount > 0 && (
               <span 
                 style={{ backgroundColor: 'var(--text-luxury, #1A1A1A)', color: 'var(--bg-luxury, #EFECE3)' }}

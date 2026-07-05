@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import { Save, Plus, Trash2, Edit3, Check, X, Layout, Image as ImageIcon, List, ShieldAlert, CheckCircle, RefreshCw, Package, LogOut, MessageSquareQuote } from 'lucide-react';
+import { Save, Plus, Trash2, Edit3, Check, X, Layout, Image as ImageIcon, List, ShieldAlert, CheckCircle, RefreshCw, Package, LogOut, MessageSquareQuote, MapPin, Inbox } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TestimonialControl from './TestimonialControl';
+import ContactMessagesControl from './ContactMessagesControl';
 
 // ====================================================================
 // 📂 SUB-COMPONENT 1: IDENTITY & NAVBAR LAYER (WITH INLINE EDITING)
@@ -75,7 +76,8 @@ function IdentityNavbarTab({ config, setConfig, newMenu, setNewMenu, onAddNavIte
             </div>
           </div>
         </div>
-{/* 🔥 NEW ARRIVALS PAGE SETTINGS (NEW BLOCK ADDED HERE) */}
+
+        {/* 🔥 NEW ARRIVALS PAGE SETTINGS */}
         <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left shadow-sm">
           <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3">
             New Arrivals Page Settings
@@ -93,6 +95,7 @@ function IdentityNavbarTab({ config, setConfig, newMenu, setNewMenu, onAddNavIte
             <textarea rows={4} placeholder="Explore the freshest..." value={config?.new_arrivals_subtitle || ''} onChange={(e) => setConfig(prev => ({ ...prev, new_arrivals_subtitle: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] resize-y" />
           </div>
         </div>
+
         {/* 🔥 NEW SECTION: COLLECTION HIGHLIGHT SETTINGS */}
         <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left shadow-sm">
           <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3">
@@ -323,6 +326,7 @@ function FeaturesGridTab({ config, setConfig, newFeature, setNewFeature, onAddFe
           <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Feature Card Headline Title</label>
           <input type="text" placeholder="e.g., Artisanal Stitching" value={newFeature.title} onChange={(e) => setNewFeature(p => ({ ...p, title: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] text-[#1a1a1a]" />
         </div>
+
         <div className="w-full flex flex-col gap-2">
           <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Card Narrative Description</label>
           <textarea rows={4} placeholder="Describe your unique tailoring standard layout advantage..." value={newFeature.description} onChange={(e) => setNewFeature(p => ({ ...p, description: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] font-light text-[#1a1a1a] leading-relaxed" />
@@ -380,8 +384,63 @@ function FeaturesGridTab({ config, setConfig, newFeature, setNewFeature, onAddFe
       </div>
       
     </div>
+
   );
 }
+
+// ====================================================================
+// 📂 SUB-COMPONENT 4: CONTACT PAGE SETTINGS
+// ====================================================================
+function ContactSettingsTab({ config, setConfig }) {
+  return (
+    <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-8 items-start min-w-0">
+      <div className="flex flex-col gap-8 w-full">
+        <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left shadow-sm">
+          <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3">Contact Hero Section</h3>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Main Title</label>
+            <input type="text" value={config?.contact_hero_title || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_hero_title: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a]" />
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Subtitle Description</label>
+            <textarea rows={3} value={config?.contact_hero_subtitle || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_hero_subtitle: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a]" />
+          </div>
+        </div>
+
+        <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left shadow-sm">
+          <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3">Studio Contact Details</h3>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Contact Email</label>
+            <input type="email" value={config?.contact_email || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_email: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a]" />
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Phone Number</label>
+            <input type="text" value={config?.contact_phone || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_phone: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a]" />
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">WhatsApp Number (Code + Number, no +)</label>
+            <input type="text" placeholder="919876543210" value={config?.contact_whatsapp || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_whatsapp: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a]" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-8 w-full">
+        <div className="w-full bg-white border border-neutral-200 p-6 rounded-xl flex flex-col gap-5 text-left shadow-sm">
+          <h3 className="font-['Playfair_Display'] text-lg font-medium text-[#b5862a] border-b border-neutral-100 pb-3">Address & Map Location</h3>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Full Physical Address</label>
+            <textarea rows={3} value={config?.contact_address || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_address: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a]" />
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[11px] uppercase font-bold tracking-wider text-neutral-400">Google Maps iFrame URL (src only)</label>
+            <textarea rows={5} placeholder="https://www.google.com/maps/embed?pb=..." value={config?.contact_map_src || ''} onChange={(e) => setConfig(prev => ({ ...prev, contact_map_src: e.target.value }))} className="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm rounded-md focus:outline-none focus:border-[#b5862a] font-mono text-xs" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ====================================================================
 // 👑 MAIN MASTER PLATFORM CONTROL DESK ORCHESTRATOR WITH SYSTEM SIDEBAR
@@ -399,7 +458,8 @@ export default function AdminCMSDashboard() {
     hero_images: [], hero_cta_text_1: '', hero_cta_link_1: '', hero_cta_text_2: '', hero_cta_link_2: '',
     copyright_text: '', features_list: [], social_links: { instagram: '', facebook: '', x: '' },
     collection_title: '', collection_description: '',
-    new_arrivals_eyebrow: 'Just Dropped', new_arrivals_title: 'New Arrivals', new_arrivals_subtitle: 'Explore the freshest silhouettes...', // 🔥 Initialize new fields
+    new_arrivals_eyebrow: 'Just Dropped', new_arrivals_title: 'New Arrivals', new_arrivals_subtitle: 'Explore the freshest silhouettes...',
+    contact_hero_title: '', contact_hero_subtitle: '', contact_email: '', contact_phone: '', contact_whatsapp: '', contact_address: '', contact_map_src: ''
   });
 
   const [newMenu, setNewMenu] = useState({ label: '', path: '/' });
@@ -428,7 +488,7 @@ export default function AdminCMSDashboard() {
             social_links: res.data.social_links && typeof res.data.social_links === 'object' 
               ? { instagram: '', facebook: '', x: '', ...res.data.social_links }
               : { instagram: '', facebook: '', x: '' },
-            collection_title: res.data.collection_title || '', // Fallback to empty string
+            collection_title: res.data.collection_title || '',
             collection_description: res.data.collection_description || ''
           });
         }
@@ -554,12 +614,32 @@ export default function AdminCMSDashboard() {
             </button>
             
             <button 
+              onClick={() => setActiveTab('contact_settings')} 
+              className={`text-left p-3 rounded-md text-xs font-bold uppercase flex items-center gap-2.5 transition-all ${
+                activeTab === 'contact_settings' ? 'bg-[#b5862a] text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+              }`}
+            >
+              <MapPin size={14}/> Contact Settings
+            </button>
+
+            <span className="text-[9px] uppercase tracking-widest font-bold text-neutral-500 mt-6 mb-2 block">Customer CRM</span>
+
+            <button 
               onClick={() => setActiveTab('reviews')} 
               className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-md text-xs font-bold uppercase transition-all ${
-                activeTab === 'reviews' ? 'bg-[#b5862a] text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                  activeTab === 'reviews' ? 'bg-[#b5862a] text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
               }`}
             >
               <MessageSquareQuote size={14} /> Reviews Control
+            </button>
+             
+            <button 
+              onClick={() => setActiveTab('inbox')} 
+              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-md text-xs font-bold uppercase transition-all ${
+                activeTab === 'inbox' ? 'bg-[#b5862a] text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+              }`}
+            >
+              <Inbox size={14} /> Inbox CRM
             </button>
             
             <span className="text-[9px] uppercase tracking-widest font-bold text-neutral-500 mt-6 mb-2 block">Catalog Inventory</span>
@@ -597,12 +677,14 @@ export default function AdminCMSDashboard() {
                 {activeTab === 'identity' && 'Identity & Navigation Matrix'}
                 {activeTab === 'hero' && 'Hero Layout Architecture'}
                 {activeTab === 'features' && 'Features Structural Grid'}
+                {activeTab === 'contact_settings' && 'Contact Page Architecture'}
+                {activeTab === 'inbox' && 'Customer CRM Inbox'}
                 {activeTab === 'reviews' && 'Customer Reviews Control'}
               </h1>
             </div>
             
-            {/* Save Button (Hide on Reviews Tab since Reviews save instantly) */}
-            {activeTab !== 'reviews' && (
+            {/* Save Button (Hide on Reviews Tab and Inbox Tab since they save instantly) */}
+            {activeTab !== 'reviews' && activeTab !== 'inbox' && (
               <button 
                 type="button" 
                 onClick={handleSaveCMSManifest} 
@@ -638,10 +720,19 @@ export default function AdminCMSDashboard() {
             {activeTab === 'features' && (
               <FeaturesGridTab config={config} setConfig={setConfig} newFeature={newFeature} setNewFeature={setNewFeature} onAddFeatureItem={handleAddFeatureItem} onRemoveFeatureItem={handleRemoveFeatureItem} />
             )}
+
+            {activeTab === 'contact_settings' && (
+              <ContactSettingsTab config={config} setConfig={setConfig} />
+            )}
             
             {activeTab === 'reviews' && (
               <TestimonialControl />
             )}
+
+            {activeTab === 'inbox' && (
+              <ContactMessagesControl />
+            )}
+            
           </div>
 
         </div>
