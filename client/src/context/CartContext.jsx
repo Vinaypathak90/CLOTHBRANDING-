@@ -10,26 +10,34 @@ export function CartProvider({ children }) {
   const [isCartLoading, setIsCartLoading] = useState(false);
 
   // ==========================================
+  // 🔄 UTILITY: FETCH LIVE CART FROM DATABASE
+  // ==========================================
+  const fetchUserCart = async () => {
+    try {
+      setIsCartLoading(true);
+      const res = await axiosInstance.get('/cart/my-cart');
+      console.log("📥 [CART FETCH SUCCESS]: Live cart synchronized from database:", res.data);
+      if (res.data.success) {
+        // Backend maps it as res.data.cart or res.data.data depending on configuration
+        setCartItems(res.data.cart || res.data.data || []);
+      }
+    } catch (err) {
+      console.error("❌ [CART FETCH ERROR]: Failed to synchronize live cart desk logs:", err);
+    } finally {
+      setIsCartLoading(false);
+    }
+  };
+
+  // ==========================================
   // 🔄 INITIAL LOAD: HYDRATE BROWSER CORDILLERA
   // ==========================================
   useEffect(() => {
     const hydrateCart = async () => {
       if (currentUser) {
-        // CASE A: User Logged In -> Database Manifest Sync
-        try {
-          setIsCartLoading(true);
-          const res = await axiosInstance.get('/cart/my-cart');
-          if (res.data.success) {
-            setCartItems(res.data.cart || []);
-          }
-        } catch (err) {
-          console.error("❌ [CART FETCH ERROR]:", err);
-        } finally {
-          // 🔥 FIXED: Changed the broken brackets to a clean finally block
-          setIsCartLoading(false);
-        }
+        // CASE A: User Logged In -> Database Sync
+        await fetchUserCart();
       } else {
-        // CASE B: Guest Mode -> Instant LocalStorage Pipeline Recovery
+        // CASE B: Guest Mode -> LocalStorage Pipeline Recovery
         try {
           const localCart = localStorage.getItem('guest_cart');
           const parsedCart = localCart ? JSON.parse(localCart) : [];
@@ -59,10 +67,8 @@ export function CartProvider({ children }) {
               console.log("🔄 [CART MERGE SYNC]: Migrating guest items into active DB account...");
               await axiosInstance.post('/cart/sync-guest-cart', { items: parsedLocalCart });
               
-              const res = await axiosInstance.get('/cart/my-cart');
-              if (res.data.success) {
-                setCartItems(res.data.cart || []);
-              }
+              // Safe re-fetch loop integration to sync global ledger cleanly
+              await fetchUserCart();
               localStorage.removeItem('guest_cart'); // Flush memory after safe ingestion
             }
           } catch (err) {
@@ -80,14 +86,17 @@ export function CartProvider({ children }) {
   // ==========================================
   
   // 1. Unbreakable Add to Cart Engine
-  const addToCart = async (product, variantId = null, quantity = 1) => {
+  const addToCart = async (product, sizeVariant = 'Standard', quantity = 1) => {
+    console.log("🛒 [FRONTEND CART CALLED]: Input trace properties initialization:", { product, sizeVariant, quantity });
+
     if (!product) {
       console.error("❌ [CART ENGINE REJECTED]: Product parameter is undefined.");
       return;
     }
 
-    // Defensive check to extract identification keys universally
+    // Defensive check to extract identification keys universally across structural properties
     const targetProductId = product.id || product._id || product.product_id;
+    const finalSize = sizeVariant || 'Standard';
     
     if (!targetProductId) {
       console.error("❌ [CART SCHEMA CRITICAL]: Cannot extract product identification token.", product);
@@ -95,20 +104,33 @@ export function CartProvider({ children }) {
     }
 
     if (currentUser) {
-      // Authenticated User Network Post
+      // Authenticated User Network Post API Pipe
       try {
-        const res = await axiosInstance.post('/cart/add', { productId: targetProductId, variantId, quantity });
-        if (res.data.success) setCartItems(res.data.cart);
-      } catch (err) { console.error("❌ [DB ADD ERROR]:", err); }
+        console.log("🌐 Sending network request payload data node to backend database...");
+        const res = await axiosInstance.post('/cart/add', { 
+          productId: targetProductId, 
+          size: finalSize, 
+          quantity 
+        });
+        
+        console.log("🌐 Backend operation execution complete message logging details:", res.data);
+        if (res.data.success) {
+          // Re-fetch ensures the full detailed relational models load safely into states
+          await fetchUserCart();
+          alert("Item added to bag successfully!");
+        }
+      } catch (err) { 
+        console.error("❌ [DB ADD ERROR]: Failed execution cycle validation tracking parameters:", err); 
+      }
     } else {
-      // Guest Local Storage Engine Execution
+      // Guest Local Storage Engine Execution Loop
       console.log("🎯 [GUEST INTERACTION]: Adding item to local storage ledger...", product);
       
       setCartItems((prevItems) => {
         const safePrevItems = Array.isArray(prevItems) ? prevItems : [];
         
         const existingItemIndex = safePrevItems.findIndex(
-          (item) => item.product_id === targetProductId && item.variant_id === variantId
+          (item) => item.product_id === targetProductId && item.selected_size === finalSize
         );
 
         let updatedItems = [...safePrevItems];
@@ -118,9 +140,8 @@ export function CartProvider({ children }) {
           updatedItems.push({
             id: `guest-${Date.now()}-${Math.random()}`,
             product_id: targetProductId,
-            variant_id: variantId,
+            selected_size: finalSize,
             quantity: quantity,
-            // 🔥 THE DEFENSIVE MASTER TRICK: Injects both singular and plural mapping anchors
             product: product, 
             products: product 
           });
@@ -128,6 +149,7 @@ export function CartProvider({ children }) {
         
         localStorage.setItem('guest_cart', JSON.stringify(updatedItems));
         console.log("✅ [GUEST CART STORAGE WRITTEN]: Current items status:", updatedItems);
+        alert("Item added to local bag!");
         return updatedItems;
       });
     }
@@ -138,8 +160,10 @@ export function CartProvider({ children }) {
     if (currentUser) {
       try {
         const res = await axiosInstance.delete(`/cart/remove/${cartItemId}`);
-        if (res.data.success) setCartItems(res.data.cart);
-      } catch (err) { console.error(err); }
+        if (res.data.success) {
+          await fetchUserCart();
+        }
+      } catch (err) { console.error("❌ [DB DELETE FAULT]:", err); }
     } else {
       setCartItems((prevItems) => {
         const safePrevItems = Array.isArray(prevItems) ? prevItems : [];
@@ -156,8 +180,10 @@ export function CartProvider({ children }) {
     if (currentUser) {
       try {
         const res = await axiosInstance.put(`/cart/update/${cartItemId}`, { quantity: newQuantity });
-        if (res.data.success) setCartItems(res.data.cart);
-      } catch (err) { console.error(err); }
+        if (res.data.success) {
+          await fetchUserCart();
+        }
+      } catch (err) { console.error("❌ [DB UPDATE FAULT]:", err); }
     } else {
       setCartItems((prevItems) => {
         const safePrevItems = Array.isArray(prevItems) ? prevItems : [];
@@ -171,7 +197,7 @@ export function CartProvider({ children }) {
   };
 
   return (
-    <CartContext.Provider value={{ cartItems, isCartLoading, addToCart, removeFromCart, updateQuantity }}>
+    <CartContext.Provider value={{ cartItems, isCartLoading, addToCart, removeFromCart, updateQuantity, refreshCart: fetchUserCart }}>
       {children}
     </CartContext.Provider>
   );

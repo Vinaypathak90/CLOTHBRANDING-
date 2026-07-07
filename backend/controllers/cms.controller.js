@@ -237,3 +237,60 @@ exports.adminSecretLogin = async (req, res, next) => {
     next(err);
   }
 };
+
+
+// ====================================================================
+// 1. GET STORE SETTINGS (Called by Checkout Page & Admin Dashboard)
+// ====================================================================
+exports.getStoreSettings = async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // Ignore 'No rows returned' error
+
+    return res.status(200).json({
+      success: true,
+      settings: data || { whatsapp_number: '', upi_id: '', merchant_name: '' }
+    });
+  } catch (error) {
+    console.error("[GET SETTINGS ERROR]:", error);
+    next(error);
+  }
+};
+
+// ====================================================================
+// 2. UPDATE STORE SETTINGS (Called by Admin Dashboard Save Button)
+// ====================================================================
+exports.updateStoreSettings = async (req, res, next) => {
+  try {
+    const { whatsapp_number, upi_id, merchant_name } = req.body;
+
+    // Upsert hamesha id=1 wali row ko hi over-write karega
+    const { data, error } = await supabase
+      .from('store_settings')
+      .upsert({
+        id: 1,
+        whatsapp_number,
+        upi_id,
+        merchant_name,
+        updated_at: new Date().toISOString()
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment & Contact settings updated live.",
+      settings: data
+    });
+  } catch (error) {
+    console.error("[UPDATE SETTINGS ERROR]:", error);
+    next(error);
+  }
+};

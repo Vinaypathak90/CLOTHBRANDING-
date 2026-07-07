@@ -1,29 +1,34 @@
 const router = require('express').Router();
-const {
-  instantiateCheckoutOrder,
-  getOrderTrackingPipeline,
-  getClientOrderHistory,
-  getMyOrders,
-  adminGetAllOrdersDashboard,
-  adminMutateOrderStatus,
-  adminAssignCourierAgent
+
+// 🔥 FIX: Importing the EXACT function names that exist in your new controller
+const { 
+  createWhatsAppOrder, 
+  getUserOrders,
+  adminGetAllOrdersDashboard, 
+  adminMutateOrderStatus 
 } = require('../controllers/order.controller');
 
-const { verifyUserAuth, verifyAdminClearance } = require('../middleware/auth.middleware');
+// Middlewares
+const { verifyUserAuth, verifyCmsAdminToken } = require('../middleware/auth.middleware');
 
 // ==========================================
-// CLIENT GATEWAYS (PUBLIC / SECURED SESSIONS)
+// 👤 USER ROUTES (Frontend Profile)
 // ==========================================
-router.post('/checkout-instantiate', verifyUserAuth, instantiateCheckoutOrder);
-router.get('/track/:order_id_string', getOrderTrackingPipeline);
-router.get('/my-orders-summary', verifyUserAuth, getClientOrderHistory);
-router.get('/my-orders', verifyUserAuth, getMyOrders); // 🔥 Core dashboard panel pipeline hook
+// Creating order (Public/Guest allowed, so no auth middleware for now)
+router.post('/create-qr', createWhatsAppOrder); 
+
+// Fetch history (Requires user login)
+router.get('/my-history', verifyUserAuth, getUserOrders);
+
 
 // ==========================================
-// SECURE ADMINISTRATIVE CRM GATEWAYS 
+// 👑 ADMIN ROUTES (Dashboard CRM)
 // ==========================================
-router.get('/admin/dashboard', verifyAdminClearance, adminGetAllOrdersDashboard);
-router.put('/admin/mutate-status/:id', verifyAdminClearance, adminMutateOrderStatus);
-router.post('/admin/assign-agent', verifyAdminClearance, adminAssignCourierAgent);
+// Admin views all orders
+router.get('/admin/all', verifyCmsAdminToken, adminGetAllOrdersDashboard);
+
+// Admin updates an order
+router.put('/admin/update-status/:orderId', verifyCmsAdminToken, adminMutateOrderStatus);
+
 
 module.exports = router;

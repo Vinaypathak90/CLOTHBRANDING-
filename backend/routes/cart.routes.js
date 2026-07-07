@@ -3,26 +3,30 @@ const {
   addToCart, 
   updateQuantity, 
   removeFromCart, 
-  getUserCart 
+  getUserCart,
+  syncGuestCart
 } = require('../controllers/cart.controller');
 
-// 🔥 IMPORT AUTH MIDDLEWARE: Ensures user sessions (usr_tk / adm_tk) are verified safely
+// Import authentication middleware
 const { verifyUserAuth } = require('../middleware/auth.middleware');
 
-// ====================================================================
-// GATEWAY PATH CONFIGURATIONS (All routes are strictly authenticated)
-// ====================================================================
+// ==========================================
+// 🛒 CART API PIPELINE MAPPINGS
+// ==========================================
 
-// Route A: GET - Hydrate active user's cart page grid with relational products mapping
+// Get user cart (Requires login token)
 router.get('/my-cart', verifyUserAuth, getUserCart);
 
-// Route B: POST - Fresh insertion matrix or real-time incremental multiplier logic
+// Add item to cart
 router.post('/add', verifyUserAuth, addToCart);
 
-// Route C: POST - Update line-item counts natively (+ / - buttons sync layer)
-router.post('/update-qty', verifyUserAuth, updateQuantity);
+// Update quantity (+ / -) -> Expects ID in the URL and quantity in the body
+router.put('/update/:cartItemId', verifyUserAuth, updateQuantity);
 
-// Route D: DELETE - Absolute execution purge token to wipe product out of database row
+// Remove item (Trash can icon) -> Expects ID in the URL
 router.delete('/remove/:cartItemId', verifyUserAuth, removeFromCart);
+
+// Guest Cart Sync Bypass -> Kept public so it can handle migrations smoothly
+router.post('/sync-guest-cart', syncGuestCart);
 
 module.exports = router;

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import { Save, Plus, Trash2, Edit3, Check, X, Layout, Image as ImageIcon, List, ShieldAlert, CheckCircle, RefreshCw, Package, LogOut, MessageSquareQuote, MapPin, Inbox } from 'lucide-react';
+import { Save, Plus, Trash2, Edit3, Check, X, Layout,ShoppingBag, Image as ImageIcon, List, ShieldAlert, CheckCircle, RefreshCw, Package, LogOut, MessageSquareQuote, MapPin, Inbox, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TestimonialControl from './TestimonialControl';
 import ContactMessagesControl from './ContactMessagesControl';
+import AdminPaymentSettings from './AdminPaymentSettings';
+import AdminOrdersControl from './AdminOrdersControl';
+
 
 // ====================================================================
 // 📂 SUB-COMPONENT 1: IDENTITY & NAVBAR LAYER (WITH INLINE EDITING)
@@ -642,9 +645,28 @@ export default function AdminCMSDashboard() {
               <Inbox size={14} /> Inbox CRM
             </button>
             
+            {/* 🔥 NEW PAYMENT SETTINGS SIDEBAR BUTTON 🔥 */}
+            <button 
+              onClick={() => setActiveTab('payment_settings')} 
+              className={`text-left p-3 rounded-md text-xs font-bold uppercase flex items-center gap-2.5 transition-all ${
+                activeTab === 'payment_settings' ? 'bg-[#b5862a] text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+              }`}
+            >
+              <CreditCard size={14}/> Payment Engine
+            </button>
+
+            <button 
+                onClick={() => setActiveTab('orders')} 
+                className={`text-left p-3 rounded-md text-xs font-bold uppercase flex items-center gap-2.5 transition-all ${
+                  activeTab === 'orders' ? 'bg-[#b5862a] text-white shadow-md' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'
+                }`}
+              >
+                <ShoppingBag size={14}/> Orders Control
+              </button>
+
             <span className="text-[9px] uppercase tracking-widest font-bold text-neutral-500 mt-6 mb-2 block">Catalog Inventory</span>
             
-            {/* 🔥 CROSS NAVIGATION REDIRECT TO PRODUCTS CONTROL TERM */}
+            {/* CROSS NAVIGATION REDIRECT TO PRODUCTS CONTROL TERM */}
             <button 
               type="button" 
               onClick={() => navigate('/admin/products-control')} 
@@ -680,11 +702,15 @@ export default function AdminCMSDashboard() {
                 {activeTab === 'contact_settings' && 'Contact Page Architecture'}
                 {activeTab === 'inbox' && 'Customer CRM Inbox'}
                 {activeTab === 'reviews' && 'Customer Reviews Control'}
+                
+                {/* 🔥 DYNAMIC TITLE FOR PAYMENT TAB 🔥 */}
+                {activeTab === 'payment_settings' && 'Payment & Contact Engine'}
+                {activeTab === 'orders' && 'Order Fulfillment Desk'}
               </h1>
             </div>
             
-            {/* Save Button (Hide on Reviews Tab and Inbox Tab since they save instantly) */}
-            {activeTab !== 'reviews' && activeTab !== 'inbox' && (
+            {/* Save Button (Hide on Reviews Tab, Inbox Tab, and Payment Tab since they save instantly/independently) */}
+            {activeTab !== 'reviews' && activeTab !== 'inbox' && activeTab !== 'payment_settings' && (
               <button 
                 type="button" 
                 onClick={handleSaveCMSManifest} 
@@ -731,6 +757,18 @@ export default function AdminCMSDashboard() {
 
             {activeTab === 'inbox' && (
               <ContactMessagesControl />
+            )}
+
+            {/* 🔥 NEW COMPONENT INJECTION 🔥 */}
+            {activeTab === 'payment_settings' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+                <AdminPaymentSettings />
+              </div>
+            )}
+            {activeTab === 'orders' && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+                <AdminOrdersControl />
+              </div>
             )}
             
           </div>

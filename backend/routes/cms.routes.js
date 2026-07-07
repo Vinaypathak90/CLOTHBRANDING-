@@ -4,7 +4,9 @@ const {
   getCMSManifest, 
   adminUpdateCMSManifest, 
   adminInitializeCMSManifest, 
-  adminSecretLogin 
+  adminSecretLogin ,
+  getStoreSettings, 
+  updateStoreSettings // 🔥 Yeh function imported hai
 } = require('../controllers/cms.controller');
 
 // ====================================================================
@@ -53,5 +55,15 @@ router.post('/admin-gate-login', adminSecretLogin);
 // Secure design mutations locked with our independent CMS guard
 router.put('/crm-update', verifyCmsAdminToken, adminUpdateCMSManifest);
 router.post('/initialize', verifyCmsAdminToken, adminInitializeCMSManifest);
+
+// ====================================================================
+// 💳 PAYMENT & CONTACT ENGINE ROUTES
+// ====================================================================
+// GET route is public (so Checkout page can read the QR data)
+router.get('/settings', getStoreSettings);
+
+// 🔥 FIX: Added the missing POST route and secured it with verifyCmsAdminToken
+router.post('/settings', verifyCmsAdminToken, updateStoreSettings);
+
 
 module.exports = router;

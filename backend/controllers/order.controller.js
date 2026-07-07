@@ -1,25 +1,31 @@
 const { supabase } = require('../config/db');
+const crypto = require('crypto');
 
-// Helper system to safely generate deterministic random uppercase invoice identifiers
+// ====================================================================
+// 🛠️ UTILITY CORE: SAFE INVOICE ID GENERATORS
+// ====================================================================
 const designatorCodeGenerator = () => {
   const randomizedSeed = Math.floor(100000 + Math.random() * 900000);
   return `PRT-${new Date().getFullYear()}-${randomizedSeed}`;
 };
 
-// ==========================================
-// CLIENT CONTEXT PIPELINES (PUBLIC / SECURE)
-// ==========================================
+const whatsappOrderCodeGenerator = () => {
+  return `PRT-2026-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+};
 
-// 1. Checkout Step: Create Order & Init Tracking Pipeline
+// ====================================================================
+// 👤 CLIENT CONTEXT PIPELINES (PUBLIC / SECURE SHOP ENGINE)
+// ====================================================================
+
+// 1. Checkout Step: Create Order via Gateway (Legacy Code Path Retention)
 exports.instantiateCheckoutOrder = async (req, res, next) => {
   try {
     const { items, shipping_address, subtotal_amount, discount_amount, delivery_charge, final_payable, razorpay_order_id } = req.body;
-    const authenticatedClientId = req.user ? req.user.id : null; // Accommodate guest users natively
+    const authenticatedClientId = req.user ? req.user.id : null; 
 
     const assignedCustomInvoiceId = designatorCodeGenerator();
     const immediateInitialTimestamp = new Date().toISOString();
     
-    // Construct first verification node log element entry inside timeline array
     const baselineTrackingTimeline = [
       {
         status: 'Pending',
@@ -57,7 +63,59 @@ exports.instantiateCheckoutOrder = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 2. Fetch tracking details for a single specific order via custom string identifier
+// 2. Checkout Step: Create WhatsApp Custom Order (New Manual UPI QR Flow)
+exports.createWhatsAppOrder = async (req, res, next) => {
+  try {
+    const { 
+      user_id, 
+      items, 
+      shipping_address, 
+      subtotal_amount,
+      delivery_charge = 0,
+      discount_amount = 0,
+      payment_screenshot_url
+    } = req.body;
+
+    const final_payable = (Number(subtotal_amount) + Number(delivery_charge)) - Number(discount_amount);
+    const order_id_string = whatsappOrderCodeGenerator();
+
+    const initialTimeline = [{
+      status: "Pending",
+      timestamp: new Date().toISOString(),
+      note: "Order placed via QR Checkout. Awaiting Admin verification."
+    }];
+
+    const { data: newOrder, error } = await supabase
+      .from('orders')
+      .insert([{
+        order_id_string,
+        user_id: user_id || null, 
+        items,
+        shipping_address,
+        subtotal_amount,
+        delivery_charge,
+        discount_amount,
+        final_payable,
+        payment_screenshot_url,
+      
+        payment_status: 'pending_verification',
+        order_status: 'Pending',
+        timeline: initialTimeline
+      }])
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return res.status(201).json({
+      success: true,
+      message: 'Order recorded. Please confirm on WhatsApp.',
+      order: newOrder
+    });
+  } catch (err) { next(err); }
+};
+
+// 3. Logistics Pipeline: Fetch Tracking Matrix details via unique string label
 exports.getOrderTrackingPipeline = async (req, res, next) => {
   try {
     const { order_id_string } = req.params;
@@ -76,7 +134,7 @@ exports.getOrderTrackingPipeline = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 3. User Dashboard: List all past orders executed by a specific profile account
+// 4. User Dashboard: List all past orders (Legacy compact layout mapping)
 exports.getClientOrderHistory = async (req, res, next) => {
   try {
     const { data: historicOrders, error } = await supabase
@@ -90,7 +148,7 @@ exports.getClientOrderHistory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 4. FETCH PROFILE EXECUTED ORDERS (Natively feeds the Profile Dashboard Viewport)
+// 5. User Dashboard: Hydrate full historic purchase profiles (UX Engine Pipe)
 exports.getMyOrders = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -102,10 +160,7 @@ exports.getMyOrders = async (req, res, next) => {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("❌ [SUPABASE HISTORY ERROR]:", error.message);
-      return next(error);
-    }
+    if (error) throw error;
 
     return res.status(200).json({
       success: true,
@@ -115,16 +170,36 @@ exports.getMyOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ==========================================
-// ADMIN CRM OPERATIONS (SECURE CONTROL PANEL)
-// ==========================================
+// 6. User Dashboard Alternative Context Route (Safety fallback route handler map)
+exports.getUserOrders = async (req, res, next) => {
+  try {
+    const userId = req.user?.id || req.params.user_id; 
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User context identification string missing." });
+    }
 
-// 5. Admin Module: Master query pipeline execution to audit all incoming operations state logs
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return res.status(200).json({ success: true, orders });
+  } catch (err) { next(err); }
+};
+
+// ====================================================================
+// 👑 ADMIN CRM OPERATIONS (AUTHENTICATED MASTER DESK CONTROL GRID)
+// ====================================================================
+
+// 7. Admin Panel: Master query execution to audit all incoming system operations logs
 exports.adminGetAllOrdersDashboard = async (req, res, next) => {
   try {
     const { statusFilter } = req.query;
     
-    let queryBuilder = supabase.from('orders').select('*, users(name, email)');
+    let queryBuilder = supabase.from('orders').select('*, users(name, email, phone)');
     if (statusFilter) {
       queryBuilder = queryBuilder.eq('order_status', statusFilter);
     }
@@ -132,43 +207,55 @@ exports.adminGetAllOrdersDashboard = async (req, res, next) => {
     const { data: fullOrdersRegister, error } = await queryBuilder.order('created_at', { ascending: false });
     if (error) throw error;
 
-    return res.status(200).json(fullOrdersRegister);
+    return res.status(200).json({
+      success: true,
+      orders: fullOrdersRegister
+    });
   } catch (err) { next(err); }
 };
 
-// 6. Admin Module: Advance pipeline steps and inject historical entries into the JSONB array
+// 8. Admin Panel: Advance fulfillment cycle logs and push entries into JSONB timeline array
 exports.adminMutateOrderStatus = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { nextStatusState, administrativeNote } = req.body;
+    const orderId = req.params.id || req.params.orderId;
+    const { nextStatusState, administrativeNote, order_status, payment_status, note } = req.body;
 
-    // Fetch existing order profile coordinates to download active timeline arrays matrix snapshot
+    // Normalize parameters to support both legacy and newly configured payload styles smoothly
+    const targetOrderStatus = order_status || nextStatusState;
+    const targetPaymentStatus = payment_status; // Optional parameter update mapping target
+    const targetNote = note || administrativeNote;
+
     const { data: activeCurrentOrder, error: fetchError } = await supabase
       .from('orders')
-      .select('timeline, order_status')
-      .eq('id', id)
+      .select('timeline')
+      .eq('id', orderId)
       .single();
 
     if (fetchError || !activeCurrentOrder) {
-      return res.status(404).json({ message: 'Target order record identifier tracking node execution failure.' });
+      return res.status(404).json({ success: false, message: 'Target order record identifier tracking node execution failure.' });
     }
 
-    const modifiedHistoryTimelineArray = [...activeCurrentOrder.timeline];
+    const modifiedHistoryTimelineArray = [...(activeCurrentOrder.timeline || [])];
     modifiedHistoryTimelineArray.push({
-      status: nextStatusState,
+      status: targetOrderStatus,
       timestamp: new Date().toISOString(),
-      note: administrativeNote || `Fulfillment cycle status shifted execution target to: ${nextStatusState}`
+      note: targetNote || `Fulfillment cycle status shifted execution target to: ${targetOrderStatus}`
     });
 
-    // Execute atomic changes updates back down onto database table structure properties
+    const updatePayload = {
+      order_status: targetOrderStatus,
+      timeline: modifiedHistoryTimelineArray,
+      updated_at: new Date().toISOString()
+    };
+
+    if (targetPaymentStatus) {
+      updatePayload.payment_status = targetPaymentStatus;
+    }
+
     const { data: updatedOrderRecord, error: mutationError } = await supabase
       .from('orders')
-      .update({
-        order_status: nextStatusState,
-        timeline: modifiedHistoryTimelineArray,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
+      .update(updatePayload)
+      .eq('id', orderId)
       .select('*')
       .single();
 
@@ -182,7 +269,7 @@ exports.adminMutateOrderStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// 7. Admin Module: Allocate courier agent parameters
+// 9. Admin Panel: Allocate courier parameters dynamically onto standard grids
 exports.adminAssignCourierAgent = async (req, res, next) => {
   try {
     const { orderId, courierAgentId } = req.body;
@@ -191,7 +278,8 @@ exports.adminAssignCourierAgent = async (req, res, next) => {
       .from('orders')
       .update({ 
         delivery_agent_id: courierAgentId,
-        order_status: 'Shipped' // Automatically advance workflow to Shipped state
+        order_status: 'Shipped',
+        updated_at: new Date().toISOString()
       })
       .eq('id', orderId)
       .select('*')

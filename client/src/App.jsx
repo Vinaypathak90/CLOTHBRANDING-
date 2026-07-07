@@ -6,26 +6,26 @@ import { CMSContext } from './context/CMSContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import ProtectedRoute from './components/common/ProtectedRoute'; // 🔥 Step 1: Guard import kiya
+// 🔥 Import BOTH guards: ProtectedRoute (User) & AdminRoute (Admin)
+import ProtectedRoute, { AdminRoute } from './components/common/ProtectedRoute'; 
 
 // Premium Core Pages Mapping Layer
 import Home from './pages/shop/Home';
 import Wishlist from './pages/shop/Wishlist';
 import Cart from './pages/shop/Cart'; 
 import ProductDetails from './pages/shop/ProductDetails';
-import AuthPage from './pages/auth/AuthPage'; // 🔥 Step 2: Auth page import kiya
+import AuthPage from './pages/auth/AuthPage'; 
 import Checkout from './pages/shop/Checkout';
-import ProfilePage from './pages/shop/ProfilePage';
 import CollectionsPage from './pages/shop/CollectionsPage';
+import CategoryPage from './pages/shop/CategoryPage';
+import NewArrivals from './pages/shop/NewArrivals';
+import ContactUs from './pages/shop/Contact';
+import UserDashboard from './pages/user/UserDashboard';
+
+// Admin Core Pages
 import AdminCMSDashboard from './pages/admin/AdminCMSDashboard';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminProductDashboard from './pages/admin/AdminProductDashboard';
-import CategoryPage from './pages/shop/CategoryPage';
-import Collections from './pages/shop/CollectionsPage';
-import NewArrivals from './pages/shop/NewArrivals';
-// Agar file src/pages/shop folder mein Contact.jsx naam se hai, toh aise import karo:
-import ContactUs from './pages/shop/Contact';
-
 
 export default function App() {
   const { loading: cmsLoading } = useContext(CMSContext);
@@ -50,7 +50,6 @@ export default function App() {
         <Navbar />
       
         {/* MAIN MASTER SCENE DESK VIEWPORT */}
-        {/* pt-[92px] padding alignment ensure karta hai ki dynamic content fixed navbar ke neeche push ho */}
         <main className="flex-grow pt-[92px]">
           <Routes>
             
@@ -59,49 +58,37 @@ export default function App() {
             {/* ========================================== */}
             <Route path="/" element={<Home />} /> 
             <Route path="/shop/product/:id" element={<ProductDetails />} />
-            <Route path="/auth" element={<AuthPage />} /> {/* 🔥 Login/Signup entry portal */}
+            <Route path="/auth" element={<AuthPage />} /> 
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/collections" element={<CollectionsPage />} />
+            <Route path="/category/:slug" element={<CategoryPage />} />
+            <Route path="/new-arrivals" element={<NewArrivals />} />
+            <Route path="/contact" element={<ContactUs />} />
+            
+            {/* Admin Gate MUST be public so admins can log in */}
+            <Route path="/designer-studio-gate" element={<AdminLogin />} />
 
             {/* ========================================== */}
             {/* 🔒 PRIVATE ROUTES (Only Logged-in Users) */}
             {/* ========================================== */}
-            {/* Make Wishlist and Cart public views — allow browsing without login */}
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/cart" element={<Cart />} />
-{/* 🔥 Step 2: Profile Page Gateway Wrapped Securely under ProtectedRoute */}
-            <Route 
-              path="/profile" 
-              element = {
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } 
-            />
-            {/* Checkout requires authentication */}
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/collections" element={<CollectionsPage />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
-            <Route path="/new-arrivals" element={<NewArrivals />} />
-      <Route path="/contact" element={<ContactUs />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/user/profile" element={<UserDashboard />} />
+              <Route path="/user/orders" element={<UserDashboard />} />
+            </Route>
 
-             /* ========================================== */
-            {/* 🔑 ADMIN ROUTES (Only Admin Users) */
-            /* ========================================== */
-            }
-            <Route path="/admin/cms-control" element={<AdminCMSDashboard />} />
-            <Route path="/admin/product-control" element={<AdminProductDashboard />} />
-            <Route path="/designer-studio-gate" element={<AdminLogin />} />
-            <Route path="/admin/products-control" element={<AdminProductDashboard />} />
+            {/* ========================================== */}
+            {/* 👑 ADMIN ROUTES (Strictly Only Admins) */}
+            {/* ========================================== */}
+            <Route element={<AdminRoute />}>
+              <Route path="/admin/cms-control" element={<AdminCMSDashboard />} />
+              <Route path="/admin/products-control" element={<AdminProductDashboard />} />
+              {/* Keeping both just in case you use product-control or products-control */}
+              <Route path="/admin/product-control" element={<AdminProductDashboard />} />
+            </Route>
 
-            {/* Future shop views paths clusters yahan merge honge */}
           </Routes>
-          
         </main>
         
         {/* GLOBAL SECURITY FOOTER LAYER */}
