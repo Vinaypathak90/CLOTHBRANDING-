@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { 
   Package, Search, Eye, CheckCircle, Truck, X, Image as ImageIcon, 
-  RefreshCw, ShieldAlert, Clock, CreditCard, ChevronRight, MapPin
+  RefreshCw, ShieldAlert, Clock, CreditCard, ChevronRight, MapPin, Trash2
 } from 'lucide-react';
 
 export default function AdminOrdersControl() {
@@ -25,7 +25,6 @@ export default function AdminOrdersControl() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      // Admin token attach kar rahe hain taaki backend guard pass ho jaye
       const adminToken = localStorage.getItem('adm_tk'); 
       const res = await axiosInstance.get('/orders/admin/all', {
         headers: { Authorization: `Bearer ${adminToken}` }
@@ -45,7 +44,7 @@ export default function AdminOrdersControl() {
     fetchOrders();
   }, []);
 
-  // Filter logic for search bar (Search by Order ID or Email)
+  // Filter logic for search bar
   const filteredOrders = orders.filter(order => 
     order.order_id_string?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.users?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,6 +83,29 @@ export default function AdminOrdersControl() {
       alert("Failed to update order status.");
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // ==========================================
+  // 🔥 NEW: Delete Order Logic
+  // ==========================================
+  const handleDeleteOrder = async (orderId) => {
+    const isConfirmed = window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.");
+    if (!isConfirmed) return;
+
+    try {
+      const adminToken = localStorage.getItem('adm_tk');
+      const res = await axiosInstance.delete(`/orders/admin/delete/${orderId}`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+
+      if (res.data?.success) {
+        alert("Order deleted successfully.");
+        fetchOrders(); // Refresh table after deletion
+      }
+    } catch (err) {
+      console.error("[ADMIN ORDER DELETE]: Failed", err);
+      alert("Failed to delete order. Make sure your backend route is set up.");
     }
   };
 
@@ -182,12 +204,23 @@ export default function AdminOrdersControl() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                        onClick={() => handleManageClick(order)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#161412] text-white text-[10px] uppercase font-bold tracking-wider rounded hover:bg-[#b5862a] transition-colors"
-                      >
-                        <Eye size={14} /> Manage
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        {/* Manage Button */}
+                        <button 
+                          onClick={() => handleManageClick(order)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#161412] text-white text-[10px] uppercase font-bold tracking-wider rounded hover:bg-[#b5862a] transition-colors"
+                        >
+                          <Eye size={14} /> Manage
+                        </button>
+                        {/* Delete Button */}
+                        <button 
+                          onClick={() => handleDeleteOrder(order.id)}
+                          title="Delete Order"
+                          className="inline-flex items-center gap-1.5 px-2 py-1.5 bg-red-50 text-red-600 text-[10px] uppercase font-bold tracking-wider rounded border border-red-200 hover:bg-red-600 hover:text-white transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

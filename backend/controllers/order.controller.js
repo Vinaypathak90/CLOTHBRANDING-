@@ -294,3 +294,66 @@ exports.adminAssignCourierAgent = async (req, res, next) => {
     });
   } catch (err) { next(err); }
 };
+// ====================================================================
+// 🔥 ADMIN: DELETE ORDER PERMANENTLY
+// ====================================================================
+exports.deleteOrder = async (req, res, next) => {
+  try {
+    // 🔥 FIX: Handled both 'id' and 'orderId' just like your update function!
+    const orderId = req.params.id || req.params.orderId;
+
+    if (!orderId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Order ID parameter is missing in the request.' 
+      });
+    }
+
+    // Optional but Recommended: Double-check if the requester is an admin
+    if (req.user && req.user.role !== 'superadmin' && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Access Denied: You do not have permission to delete orders.' 
+      });
+    }
+
+    // 1. Verify if the order exists before deleting
+    const { data: existingOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('id', orderId) // 🔥 Using the dynamic orderId here
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    
+    if (!existingOrder) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Order not found or already deleted.' 
+      });
+    }
+
+    // 2. Perform the permanent delete operation
+    const { error: deleteError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId); // 🔥 Using the dynamic orderId here
+
+    if (deleteError) throw deleteError;
+
+    // Log the action on the backend for security tracking
+    console.log(`🗑️ [ORDER DELETED]: Order ID ${orderId} was deleted by Admin.`);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Order has been permanently deleted from the database.' 
+    });
+
+  } catch (error) {
+    console.error("❌ [ADMIN DELETE ORDER ERROR]:", error.message);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Failed to delete the order due to a server error.' 
+    });
+  }
+};

@@ -97,17 +97,25 @@ exports.unifiedLogin = async (req, res, next) => {
 // ====================================================================
 // 3. GENERATE OTP FOR EMAILJS (Frontend integration ready)
 // ====================================================================
+// ====================================================================
+// 3. SECURE FORGOT PASSWORD PIPELINE (Backend EmailJS Integration)
+// ====================================================================
 exports.forgotPasswordPipeline = async (req, res, next) => {
   try {
     const { email } = req.body;
     
-    // Generate a 6-digit numeric OTP for user-friendly frontend entry
+    // Generate a 6-digit numeric OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     
+    // Hash it for DB storage
     const secureTokenHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-    const tokenExpirationWindow = new Date(Date.now() + 15 * 60 * 1000); // 15-minute OTP lifecycle
+    const tokenExpirationWindow = new Date(Date.now() + 15 * 60 * 1000); // 15-minute OTP
 
-    const { data: userExists } = await supabase.from('users').select('id, name').eq('email', email.toLowerCase().trim()).maybeSingle();
+    const { data: userExists } = await supabase
+      .from('users')
+      .select('id, name')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
     
     if (!userExists) {
       return res.status(404).json({ success: false, message: 'No account found with that email.' });
@@ -123,16 +131,33 @@ exports.forgotPasswordPipeline = async (req, res, next) => {
 
     if (error) throw error;
 
-    // Return the raw OTP to the frontend so your React app can pass it to EmailJS
+    // 🔥 SEND EMAILJS FROM BACKEND USING .ENV VARIABLES
+    const emailJsPayload = {
+      service_id: process.env.EMAILJS_SERVICE_ID,       
+      template_id: process.env.EMAILJS_TEMPLATE_ID,     
+      user_id: process.env.EMAILJS_PUBLIC_KEY,          
+      accessToken: process.env.EMAILJS_PRIVATE_KEY,     
+      template_params: {
+        to_email: email,
+        to_name: userExists.name || 'Valued Customer',
+        otp: otpCode
+      }
+    };
+
+    // Make API call to EmailJS servers directly
+    await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailJsPayload);
+
+    // Return ONLY success message. NO RAW OTP EXPOSED!
     return res.status(200).json({
       success: true,
-      message: 'OTP generated successfully.',
-      otp: otpCode, // 🔥 Frontend receives this and triggers EmailJS immediately
-      userName: userExists.name
+      message: 'OTP has been securely dispatched to your email address.'
     });
-  } catch (err) { next(err); }
+    
+  } catch (err) { 
+    console.error("❌ EmailJS Backend Error:", err.response?.data || err.message);
+    next(err); 
+  }
 };
-
 // ====================================================================
 // 4. VERIFY OTP AND RESET PASSWORD
 // ====================================================================

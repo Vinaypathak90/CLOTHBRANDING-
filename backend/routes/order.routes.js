@@ -5,7 +5,8 @@ const {
   createWhatsAppOrder, 
   getUserOrders,
   adminGetAllOrdersDashboard, 
-  adminMutateOrderStatus 
+  adminMutateOrderStatus ,
+  deleteOrder
 } = require('../controllers/order.controller');
 
 // Middlewares
@@ -30,5 +31,6 @@ router.get('/admin/all', verifyCmsAdminToken, adminGetAllOrdersDashboard);
 // Admin updates an order
 router.put('/admin/update-status/:orderId', verifyCmsAdminToken, adminMutateOrderStatus);
 
-
+// Admin deletes an order
+router.delete('/admin/delete/:orderId', verifyCmsAdminToken, deleteOrder);
 module.exports = router;
