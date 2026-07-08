@@ -4,6 +4,7 @@ import axiosInstance from '../../api/axiosInstance';
 import { RefreshCw, ArrowLeft, Plus, X, ChevronRight, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { WishlistContext } from '../../context/WishlistContext'; 
 import { CartContext } from '../../context/CartContext';
+import { AuthContext } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 
 export default function NewArrivals() {
@@ -12,6 +13,7 @@ export default function NewArrivals() {
   // Contexts
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
+  const { currentUser } = useContext(AuthContext);
 
   // States
   const [newProducts, setNewProducts] = useState([]);
@@ -92,6 +94,20 @@ export default function NewArrivals() {
     setActiveImgIndex(0);
     if (product.variants && product.variants.length > 0) {
       setSelectedSize(product.variants[0].size || 'Small');
+    }
+  };
+
+  const handleBuyNow = (product, sizeVariant = selectedSize) => {
+    if (product) {
+      addToCart(product, sizeVariant, 1);
+    }
+
+    setSelectedProduct(null);
+
+    if (!currentUser) {
+      navigate('/auth', { state: { from: { pathname: '/checkout' } } });
+    } else {
+      navigate('/checkout');
     }
   };
 
@@ -307,7 +323,12 @@ export default function NewArrivals() {
 
                 <div className="flex flex-col gap-2.5 mt-3">
                   <button onClick={() => { addToCart(selectedProduct, selectedSize, 1); setSelectedProduct(null); }} className="w-full text-[0.75rem] tracking-[0.2em] font-bold uppercase py-3.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] transition-all hover:bg-[#1a1a1a] hover:text-white rounded-md shadow-sm">ADD TO CART</button>
-                  <button className="w-full text-[0.75rem] tracking-[0.2em] font-bold uppercase py-3.5 bg-[#b5862a] text-white transition-all hover:bg-[#9c711f] shadow-md rounded-md">BUY IT NOW</button>
+                  <button 
+                    onClick={() => handleBuyNow(selectedProduct, selectedSize)}
+                    className="w-full text-[0.75rem] tracking-[0.2em] font-bold uppercase py-3.5 bg-[#b5862a] text-white transition-all hover:bg-[#9c711f] shadow-md rounded-md"
+                  >
+                    BUY IT NOW
+                  </button>
                 </div>
 
                 <p className="text-[0.9rem] font-light text-neutral-600 leading-relaxed mt-2">{selectedProduct.description}</p>

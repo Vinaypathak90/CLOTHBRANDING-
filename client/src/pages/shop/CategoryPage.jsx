@@ -4,6 +4,7 @@ import axiosInstance from '../../api/axiosInstance';
 import { RefreshCw, ArrowLeft, Plus, X, ChevronRight, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { WishlistContext } from '../../context/WishlistContext'; 
 import { CartContext } from '../../context/CartContext';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function CategoryPage() {
   const { slug } = useParams(); // URL se category ka naam nikalna (e.g., 'sunkissed-stories')
@@ -12,6 +13,7 @@ export default function CategoryPage() {
   // Contexts
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
+  const { currentUser } = useContext(AuthContext);
 
   // States
   const [products, setProducts] = useState([]);
@@ -67,6 +69,18 @@ export default function CategoryPage() {
     setActiveImgIndex(0);
     if (product.variants && product.variants.length > 0) {
       setSelectedSize(product.variants[0].size || 'Small');
+    }
+  };
+
+  const handleBuyNow = (product, sizeVariant = selectedSize) => {
+    if (product) {
+      addToCart(product, sizeVariant, 1);
+    }
+
+    if (!currentUser) {
+      navigate('/auth', { state: { from: { pathname: '/checkout' } } });
+    } else {
+      navigate('/checkout');
     }
   };
 
@@ -332,7 +346,10 @@ export default function CategoryPage() {
                   >
                     ADD TO CART
                   </button>
-                  <button className="w-full text-[0.75rem] tracking-[0.2em] font-bold uppercase py-3.5 bg-[#b5862a] text-white transition-all hover:bg-[#9c711f] shadow-md rounded-md">
+                  <button 
+                    onClick={() => handleBuyNow(selectedProduct, selectedSize)}
+                    className="w-full text-[0.75rem] tracking-[0.2em] font-bold uppercase py-3.5 bg-[#b5862a] text-white transition-all hover:bg-[#9c711f] shadow-md rounded-md"
+                  >
                     BUY IT NOW
                   </button>
                 </div>

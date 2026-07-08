@@ -4,11 +4,13 @@ import { Search, SlidersHorizontal, Heart, ShoppingBag, ArrowUpDown, X, Plus, Ch
 import { WishlistContext } from '../../context/WishlistContext';
 import { CartContext } from '../../context/CartContext';
 import { CMSContext } from '../../context/CMSContext';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function CollectionsPage() {
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
   const { cmsConfig } = useContext(CMSContext);
+  const { currentUser } = useContext(AuthContext);
 
   // Core Data States
   const [products, setProducts] = useState([]);
@@ -83,6 +85,18 @@ export default function CollectionsPage() {
     setActiveImgIndex(0);
     if (product.variants && product.variants.length > 0) {
       setSelectedSize(product.variants[0].size || 'Small');
+    }
+  };
+
+  const handleBuyNow = (product, sizeVariant = selectedSize) => {
+    if (product) {
+      addToCart(product, sizeVariant, 1);
+    }
+
+    if (!currentUser) {
+      navigate('/auth', { state: { from: { pathname: '/checkout' } } });
+    } else {
+      navigate('/checkout');
     }
   };
 
@@ -456,7 +470,10 @@ export default function CollectionsPage() {
                   >
                     ADD TO CART
                   </button>
-                  <button className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 bg-[#b5862a] text-white transition-all duration-400 hover:bg-[#9c711f] shadow-md rounded-md">
+                  <button 
+                    onClick={() => handleBuyNow(selectedProduct, selectedSize)}
+                    className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 bg-[#b5862a] text-white transition-all duration-400 hover:bg-[#9c711f] shadow-md rounded-md"
+                  >
                     BUY IT NOW
                   </button>
                 </div>

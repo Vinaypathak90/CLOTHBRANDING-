@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance'; 
 import { Plus, ChevronRight, ShieldCheck, Truck, Heart, ArrowLeft } from 'lucide-react';
 import { WishlistContext } from '../../context/WishlistContext';
 import { CartContext } from '../../context/CartContext';
 import { CMSContext } from '../../context/CMSContext'; // 🔥 Step 1: Loaded central CMS matrix context
+import { AuthContext } from '../../context/AuthContext';
 
 export default function ProductDetails() {
   const { id } = useParams(); 
+  const navigate = useNavigate();
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { addToCart } = useContext(CartContext);
   const { cmsConfig } = useContext(CMSContext); // 🔥 Step 2: Grab the configuration states from backend
+  const { currentUser } = useContext(AuthContext);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,27 +37,41 @@ export default function ProductDetails() {
     errorCta: cmsConfig?.product_not_found_cta || "Return to Lineage Collection"
   };
 
-  // Fetch individual product item dynamically from backend based on routing parameters
-  useEffect(() => {
-  const fetchSingleProduct = async () => {
-    try {
-      const res = await axiosInstance.get(`/products/detail/${id}`);
-      setProduct(res.data);
-      
-      // 🔥 SAFETY GUARD: Handle sizes parsing safely if variants array is empty or undefined
-      if (res.data && res.data.variants && res.data.variants.length > 0) {
-        setSelectedSize(res.data.variants[0].size || 'Small');
-      } else {
-        setSelectedSize('Small'); // Standard fallback token configuration
-      }
-    } catch (err) {
-      console.error("Failed to hydrate product item matrix data node:", err);
-    } finally {
-      setLoading(false);
+  const handleBuyNow = (product, sizeVariant = selectedSize) => {
+    if (product) {
+      addToCart(product, sizeVariant, 1);
+    }
+
+    if (!currentUser) {
+      navigate('/auth', { state: { from: { pathname: '/checkout' } } });
+    } else {
+      navigate('/checkout');
     }
   };
-  fetchSingleProduct();
-}, [id]);
+
+  // Fetch individual product item dynamically from backend based on routing parameters
+  useEffect(() => {
+    const fetchSingleProduct = async () => {
+      try {
+        const res = await axiosInstance.get(`/products/detail/${id}`);
+        const payload = res.data?.product || res.data;
+        setProduct(payload);
+
+        // 🔥 SAFETY GUARD: Handle sizes parsing safely if variants array is empty or undefined
+        if (payload && payload.variants && payload.variants.length > 0) {
+          setSelectedSize(payload.variants[0].size || 'Small');
+        } else {
+          setSelectedSize('Small'); // Standard fallback token configuration
+        }
+      } catch (err) {
+        console.error("Failed to hydrate product item matrix data node:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSingleProduct();
+  }, [id]);
 
   if (loading) {
     return (
@@ -205,7 +222,10 @@ export default function ProductDetails() {
               >
                 {editorialLabels.addToCartCta}
               </button>
-              <button className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 bg-[#b5862a] text-white transition-all duration-400 hover:bg-[#9c711f] shadow-md rounded-md">
+              <button 
+                onClick={() => handleBuyNow(product, selectedSize)}
+                className="w-full text-[0.75rem] tracking-[0.25em] font-bold uppercase py-4 bg-[#b5862a] text-white transition-all duration-400 hover:bg-[#9c711f] shadow-md rounded-md"
+              >
                 {editorialLabels.buyNowCta}
               </button>
             </div>
