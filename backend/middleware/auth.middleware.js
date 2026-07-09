@@ -58,15 +58,19 @@ exports.verifyCmsAdminToken = (req, res, next) => {
     // Decode and verify the token signature
     const decoded = jwt.verify(token, jwtSecret);
     
-    // Strictly validate if the role is 'admin' and matches env email
-    const targetEmail = process.env.ADMIN_EMAIL || 'vinaypathak2772@gmail.com';
+    // Get both admin emails from .env
+    const adminEmail1 = process.env.ADMIN_EMAIL_1;
+    const adminEmail2 = process.env.ADMIN_EMAIL_2;
     
-    if (decoded.role === 'admin' && decoded.email === targetEmail) {
+    // 🔥 FIX: Role check ke saath dono admin emails ko verify karo
+    const isAuthorizedAdmin = (decoded.email === adminEmail1 || decoded.email === adminEmail2);
+    
+    if (decoded.role === 'admin' && isAuthorizedAdmin) {
       req.admin = decoded;
       return next(); // Token verified! Move to controller
     }
 
-    console.warn("⚠️ [CMS GUARD]: Token payload validation failed.");
+    console.warn("⚠️ [CMS GUARD]: Token payload validation failed for:", decoded.email);
     return res.status(403).json({ success: false, message: "Forbidden. Invalid admin clearance." });
 
   } catch (err) {

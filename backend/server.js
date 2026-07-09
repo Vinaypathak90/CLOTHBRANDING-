@@ -56,22 +56,24 @@ connectDB();
 app.post('/api/cms/admin-gate-login', (req, res) => {
   try {
     const { email, password } = req.body;
+    
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Credential parameters are mandatory." });
     }
 
-    const targetEmail = process.env.ADMIN_EMAIL || 'vinaypathak2772@gmail.com';
-    const targetPassword = process.env.ADMIN_PASSWORD || 'vinay@123';
-    const jwtSecret = process.env.JWT_SECRET || 'preeti_haute_couture_secret_matrix_2026';
+    // Logic: Check if credentials match Pair 1 OR Pair 2
+    const isMatch1 = email === process.env.ADMIN_EMAIL_1 && password === process.env.ADMIN_PASSWORD_1;
+    const isMatch2 = email === process.env.ADMIN_EMAIL_2 && password === process.env.ADMIN_PASSWORD_2;
 
-    if (email === targetEmail && password === targetPassword) {
+    if (isMatch1 || isMatch2) {
       const token = jwt.sign(
         { email: email, role: 'admin' },
-        jwtSecret,
+        process.env.JWT_SECRET,
         { expiresIn: '12h' }
       );
       return res.status(200).json({ success: true, message: "Handshake verified successfully.", token });
     }
+
     return res.status(401).json({ success: false, message: "Invalid administrative credentials." });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Internal inline fault.", error: err.message });

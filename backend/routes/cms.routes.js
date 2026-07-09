@@ -4,41 +4,36 @@ const {
   getCMSManifest, 
   adminUpdateCMSManifest, 
   adminInitializeCMSManifest, 
-  adminSecretLogin ,
+  adminSecretLogin,
   getStoreSettings, 
-  updateStoreSettings // 🔥 Yeh function imported hai
+  updateStoreSettings 
 } = require('../controllers/cms.controller');
 
 // ====================================================================
-// 🔒 PRODUCTION CMS ADMIN GUARD (Database-Independent Verification)
+// 🔒 UPDATED: MULTI-ADMIN PRODUCTION GUARD
 // ====================================================================
 const verifyCmsAdminToken = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.warn("⚠️ [CMS GUARD]: Token missing in request headers.");
       return res.status(401).json({ success: false, message: "Access denied. Token missing." });
     }
 
     const token = authHeader.split(' ')[1];
     const jwtSecret = process.env.JWT_SECRET || 'preeti_haute_couture_secret_matrix_2026';
-    
-    // Decode and verify the token signature
     const decoded = jwt.verify(token, jwtSecret);
     
-    // Strictly validate if the role is 'admin' and matches env email
-    const targetEmail = process.env.ADMIN_EMAIL || 'vinaypathak2772@gmail.com';
-    if (decoded.role === 'admin' && decoded.email === targetEmail) {
+    // Check both Admin Emails defined in .env
+    const isAuthorizedAdmin = (decoded.email === process.env.ADMIN_EMAIL_1 || decoded.email === process.env.ADMIN_EMAIL_2);
+    
+    if (decoded.role === 'admin' && isAuthorizedAdmin) {
       req.admin = decoded;
-      return next(); // Token verified! Move to controller
+      return next(); 
     }
 
-    console.warn("⚠️ [CMS GUARD]: Token payload validation failed.");
     return res.status(403).json({ success: false, message: "Forbidden. Invalid admin clearance." });
-
   } catch (err) {
-    console.error("❌ [CMS GUARD ERROR]:", err.message);
-    return res.status(401).json({ success: false, message: "Unauthorized. Session expired or corrupted token." });
+    return res.status(401).json({ success: false, message: "Unauthorized. Session expired." });
   }
 };
 
@@ -52,7 +47,7 @@ router.get('/manifest', getCMSManifest);
 // Hidden entry door lock
 router.post('/admin-gate-login', adminSecretLogin); 
 
-// Secure design mutations locked with our independent CMS guard
+// Secure design mutations locked with our updated Multi-Admin guard
 router.put('/crm-update', verifyCmsAdminToken, adminUpdateCMSManifest);
 router.post('/initialize', verifyCmsAdminToken, adminInitializeCMSManifest);
 
@@ -62,8 +57,7 @@ router.post('/initialize', verifyCmsAdminToken, adminInitializeCMSManifest);
 // GET route is public (so Checkout page can read the QR data)
 router.get('/settings', getStoreSettings);
 
-// 🔥 FIX: Added the missing POST route and secured it with verifyCmsAdminToken
+// POST route is now protected and ready for use
 router.post('/settings', verifyCmsAdminToken, updateStoreSettings);
-
 
 module.exports = router;
