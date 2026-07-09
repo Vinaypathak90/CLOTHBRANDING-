@@ -2,7 +2,8 @@ const { supabase } = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-
+const axios = require('axios');
+const sendEmail = require('../utils/sendEmail');
 // ====================================================================
 // 🛠️ HELPER: Issue Unified JWT Session Tokens
 // ====================================================================
@@ -95,106 +96,109 @@ exports.unifiedLogin = async (req, res, next) => {
 };
 
 // ====================================================================
-// 3. GENERATE OTP FOR EMAILJS (Frontend integration ready)
-// ====================================================================
-// ====================================================================
-// 3. SECURE FORGOT PASSWORD PIPELINE (Backend EmailJS Integration)
+// 3. GENERATE OTP & SEND VIA NODEMAILER (NO EMAILJS REQUIRED)
 // ====================================================================
 exports.forgotPasswordPipeline = async (req, res, next) => {
   try {
-    const { email } = req.body;
-    
-    // Generate a 6-digit numeric OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Hash it for DB storage
-    const secureTokenHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-    const tokenExpirationWindow = new Date(Date.now() + 15 * 60 * 1000); // 15-minute OTP
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
 
-    const { data: userExists } = await supabase
+    const { data: user, error: fetchError } = await supabase
       .from('users')
       .select('id, name')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', email)
       .maybeSingle();
-    
-    if (!userExists) {
-      return res.status(404).json({ success: false, message: 'No account found with that email.' });
+
+    if (fetchError || !user) {
+      return res.status(404).json({ success: false, message: "No account found with this email." });
     }
 
-    const { error } = await supabase
+    const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiryTime = new Date(Date.now() + 5 * 60000).toISOString();
+
+    const { error: updateError } = await supabase
       .from('users')
       .update({
-        reset_password_token: secureTokenHash,
-        reset_password_expires: tokenExpirationWindow.toISOString()
+        reset_password_token: plainOtp, 
+        reset_password_expires: expiryTime
       })
-      .eq('email', email.toLowerCase().trim());
+      .eq('email', email);
 
-    if (error) throw error;
+    if (updateError) throw updateError;
 
-    // 🔥 SEND EMAILJS FROM BACKEND USING .ENV VARIABLES
-    const emailJsPayload = {
-      service_id: process.env.EMAILJS_SERVICE_ID,       
-      template_id: process.env.EMAILJS_TEMPLATE_ID,     
-      user_id: process.env.EMAILJS_PUBLIC_KEY,          
-      accessToken: process.env.EMAILJS_PRIVATE_KEY,     
-      template_params: {
-        to_email: email,
-        to_name: userExists.name || 'Valued Customer',
-        otp: otpCode
-      }
-    };
-
-    // Make API call to EmailJS servers directly
-    await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailJsPayload);
-
-    // Return ONLY success message. NO RAW OTP EXPOSED!
-    return res.status(200).json({
-      success: true,
-      message: 'OTP has been securely dispatched to your email address.'
-    });
+    // 🔥 BYE BYE EMAILJS! NATIVE SYSTEM ZINDABAD
+    const emailSubject = "Preedarshini - Password Recovery OTP";
     
+    // Tu khud ka sundar HTML email design kar sakta hai
+    const emailHtmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #b5862a; text-align: center;">Account Recovery</h2>
+        <p>Hello ${user.name || 'Valued Customer'},</p>
+        <p>We received a request to reset your password for your Preedarshini account.</p>
+        <div style="background-color: #f7f4ef; padding: 15px; text-align: center; margin: 20px 0; border-radius: 5px;">
+          <p style="margin: 0; font-size: 14px; color: #555; text-transform: uppercase; letter-spacing: 2px;">Your Secure OTP</p>
+          <h1 style="margin: 10px 0 0 0; color: #1a1a1a; letter-spacing: 5px;">${plainOtp}</h1>
+        </div>
+        <p style="font-size: 12px; color: #888;">This OTP is valid for exactly 5 minutes. Please do not share it with anyone.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #aaa; text-align: center;">Preedarshini Couture / Est. 2024</p>
+      </div>
+    `;
+
+    // Seedha function call, no API limits!
+    await sendEmail(email, emailSubject, emailHtmlBody);
+
+    return res.status(200).json({ success: true, message: "OTP sent securely to your email." });
   } catch (err) { 
-    console.error("❌ EmailJS Backend Error:", err.response?.data || err.message);
+    console.error("❌ [FORGOT PASSWORD ERROR]:", err.message);
     next(err); 
   }
 };
+
 // ====================================================================
 // 4. VERIFY OTP AND RESET PASSWORD
 // ====================================================================
 exports.executePasswordReset = async (req, res, next) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    // 1. Normalize Inputs (Capital email ya extra space ka tension khatam)
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
+    const otp = req.body.otp ? req.body.otp.toString().trim() : "";
+    const { newPassword } = req.body;
 
-    const secureTokenHash = crypto.createHash('sha256').update(otp.toString()).digest('hex');
-
+    // 🔥 CRITICAL FIX: Match plain OTP directly with database
     const { data: matchingUser, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email.toLowerCase().trim())
-      .eq('reset_password_token', secureTokenHash)
-      .gt('reset_password_expires', new Date().toISOString())
+      .eq('email', email)
+      .eq('reset_password_token', otp) // Compare direct plain text
+      .gt('reset_password_expires', new Date().toISOString()) // Check 5 min validity
       .maybeSingle();
 
+    // Agar OTP galat hai ya 5 minute nikal gaye
     if (error || !matchingUser) {
       return res.status(400).json({ success: false, message: 'OTP is invalid or has expired.' });
     }
 
+    // 2. Hash the NEW password securely
     const salt = await bcrypt.genSalt(12);
     const updatedPasswordHash = await bcrypt.hash(newPassword, salt);
 
-    const { error: updateError } = await supabase
+    // 3. Update Password & Flush out OTP data from database
+    const { error: resetError } = await supabase
       .from('users')
       .update({
         password_hash: updatedPasswordHash,
-        reset_password_token: null, // Flush out OTP after use
-        reset_password_expires: null
+        reset_password_token: null, // Clear OTP
+        reset_password_expires: null // Clear Expiry
       })
       .eq('id', matchingUser.id);
 
-    if (updateError) throw updateError;
+    if (resetError) throw resetError;
 
     return res.status(200).json({ success: true, message: "Account access credentials updated seamlessly." });
-  } catch (err) { next(err); }
+  } catch (err) { 
+    console.error("❌ [RESET PASSWORD ERROR]:", err.message);
+    next(err); 
+  }
 };
 
 // ====================================================================

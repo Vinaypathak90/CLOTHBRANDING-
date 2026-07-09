@@ -4,7 +4,6 @@ import { AuthContext } from '../../context/AuthContext';
 import axiosInstance from '../../api/axiosInstance';
 import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle, ChevronLeft } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
 
 export default function AuthPage() {
   const { loginUser, registerUser, requestRegistrationOtp, syncGoogleUser } = useContext(AuthContext);
@@ -76,7 +75,9 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
-      await loginUser(formData.email, formData.password, 'shop');
+      // Clean email before sending
+      const cleanEmail = formData.email.toLowerCase().trim();
+      await loginUser(cleanEmail, formData.password, 'shop');
       navigate(from, { replace: true });
     } catch (err) {
       setError(err || 'Invalid credentials.');
@@ -92,10 +93,10 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
-      const res = await requestRegistrationOtp(formData.email);
-      // Backend automatically sends OTP to email securely, we just move to the next screen
+      const cleanEmail = formData.email.toLowerCase().trim();
+      const res = await requestRegistrationOtp(cleanEmail);
       if (res.success) {
-        setSuccess(`Registration OTP sent to ${formData.email}.`);
+        setSuccess(`Registration OTP sent to ${cleanEmail}.`);
         setView('register-otp');
       }
     } catch (err) {
@@ -113,8 +114,9 @@ export default function AuthPage() {
     setLoading(true); setError(''); setSuccess('');
     
     try {
-      // Passes OTP to backend via context so the backend verifies it securely
-      await registerUser(formData.name, formData.email, formData.password, formData.otp);
+      const cleanEmail = formData.email.toLowerCase().trim();
+      const cleanOtp = formData.otp.trim();
+      await registerUser(formData.name, cleanEmail, formData.password, cleanOtp);
       navigate(from, { replace: true }); 
     } catch (err) {
       setError(err || 'Registration failed or invalid OTP.');
@@ -124,15 +126,19 @@ export default function AuthPage() {
   };
 
   // ====================================================================
-  // 4. FORGOT PASSWORD PIPELINES
+  // 4. FORGOT PASSWORD PIPELINES (🔥 FULLY OPTIMIZED)
   // ====================================================================
   const handleRequestPasswordOTP = async (e) => {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
-      const res = await axiosInstance.post('/auth/forgot-password', { email: formData.email });
+      // Safety Check: Normalize email before API call
+      const cleanEmail = formData.email.toLowerCase().trim();
+      
+      const res = await axiosInstance.post('/auth/forgot-password', { email: cleanEmail });
+      
       if (res.data.success) {
-        setSuccess(`Password reset OTP sent to ${formData.email}.`);
+        setSuccess(`Password reset OTP sent to ${cleanEmail}.`);
         setView('otp');
       }
     } catch (err) {
@@ -146,13 +152,19 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
+      // Safety Check: Normalize inputs before API call
+      const cleanEmail = formData.email.toLowerCase().trim();
+      const cleanOtp = formData.otp.trim();
+
       const res = await axiosInstance.post('/auth/reset-password', {
-        email: formData.email,
-        otp: formData.otp,
+        email: cleanEmail,
+        otp: cleanOtp,
         newPassword: formData.newPassword
       });
+
       if (res.data.success) {
         setSuccess('Password reset successfully. You can now log in.');
+        // Go back to login after 2 seconds
         setTimeout(() => setView('login'), 2000);
       }
     } catch (err) {
@@ -327,7 +339,7 @@ export default function AuthPage() {
           {/* ================================================== */}
           {view === 'register-otp' && (
             <form onSubmit={handleSignupVerify} className="flex flex-col gap-5">
-              <p className="text-[0.8rem] text-[#b5862a] font-bold uppercase mb-2">Verifying: {formData.email}</p>
+              <p className="text-[0.8rem] text-[#b5862a] font-bold uppercase mb-2">Verifying: {formData.email.toLowerCase()}</p>
               
               <div className="relative">
                 <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -383,7 +395,9 @@ export default function AuthPage() {
           {/* ================================================== */}
           {view === 'otp' && (
             <form onSubmit={handleResetPassword} className="flex flex-col gap-5">
-              <p className="text-[0.8rem] text-[#b5862a] font-bold tracking-wider uppercase mb-2">Email: {formData.email}</p>
+              <p className="text-[0.8rem] text-[#b5862a] font-bold tracking-wider uppercase mb-2">
+                Email: {formData.email.toLowerCase()}
+              </p>
               
               <div className="relative">
                 <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-neutral-400" />
