@@ -54,11 +54,54 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ====================================================================
-  // 3. REGISTRATION PIPELINE (New User Setup)
+  // 🌟 NEW: SECRET ADMIN GATE LOGIN PIPELINE
   // ====================================================================
-  const registerUser = async (name, email, password) => {
+  const adminLogin = async (email, password) => {
     try {
-      const res = await axiosInstance.post('/auth/register', { name, email, password });
+      // Hits the specific admin secret route you created in backend
+      const res = await axiosInstance.post('/auth/admin-secret-login', { email, password });
+      
+      if (res.data.success) {
+        const { token } = res.data;
+        const adminUser = { email, role: 'superadmin', name: 'System Admin' }; // Mock user info since backend only sends token
+        
+        localStorage.setItem('adm_tk', token);
+        localStorage.setItem('usr_data', JSON.stringify(adminUser));
+
+        setAuthToken(token);
+        setCurrentUser(adminUser);
+        
+        return { success: true };
+      }
+    } catch (error) {
+      throw error.response?.data?.message || 'Admin authentication denied.';
+    }
+  };
+
+  // ====================================================================
+  // 3. REQUEST REGISTRATION OTP (STEP 1 - HASH SYSTEM)
+  // ====================================================================
+  const requestRegistrationOtp = async (email) => {
+    try {
+      const res = await axiosInstance.post('/auth/request-signup-otp', { email });
+      if (res.data.success) {
+        // 🔥 Returning the FULL data so AuthPage can store otpHash and expiry
+        return res.data; 
+      }
+    } catch (error) {
+      throw error.response?.data?.message || 'Failed to generate signup OTP.';
+    }
+  };
+
+  // ====================================================================
+  // 4. REGISTRATION PIPELINE (STEP 2 - VERIFY & CREATE)
+  // ====================================================================
+  // 🔥 Now accepts otpHash and expiry from the frontend state
+  const registerUser = async (name, email, password, otp, otpHash, expiry) => {
+    try {
+      const res = await axiosInstance.post('/auth/register', { 
+        name, email, password, otp, otpHash, expiry 
+      });
       
       if (res.data.success) {
         const { token, user } = res.data;
@@ -72,12 +115,12 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user };
       }
     } catch (error) {
-      throw error.response?.data?.message || 'Registration anomaly detected. Please try again.';
+      throw error.response?.data?.message || 'Registration failed or invalid OTP.';
     }
   };
 
   // ====================================================================
-  // 4. GOOGLE OAUTH IDENTITY SYNC
+  // 5. GOOGLE OAUTH IDENTITY SYNC
   // ====================================================================
   const syncGoogleUser = async (googleId, email, name, avatarUrl) => {
     try {
@@ -101,7 +144,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ====================================================================
-  // 5. GLOBAL LOGOUT EXECUTION
+  // 6. GLOBAL LOGOUT EXECUTION
   // ====================================================================
   const logoutUser = () => {
     localStorage.removeItem('usr_tk');
@@ -111,28 +154,19 @@ export const AuthProvider = ({ children }) => {
     setAuthToken(null);
     setCurrentUser(null);
   };
-  // ====================================================================
-  // NEW: REQUEST REGISTRATION OTP
-  // ====================================================================
-  const requestRegistrationOtp = async (email) => {
-    try {
-      const res = await axiosInstance.post('/auth/request-signup-otp', { email });
-      if (res.data.success) {
-        return { success: true, otp: res.data.otp };
-      }
-    } catch (error) {
-      throw error.response?.data?.message || 'Failed to generate signup OTP.';
-    }
-  };
-  
 
-  // Provide all states and functions to the rest of the application
+  // 🔥 DYNAMIC ADMIN CHECK: Fast boolean to check if current session belongs to admin
+  const isAdmin = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
+
   return (
     <AuthContext.Provider value={{ 
       currentUser, 
       authToken, 
-      isAuthLoading, 
+      isAuthLoading,
+      isAdmin, // 🔥 Exposed this so your Router can strictly block standard users
       loginUser, 
+      adminLogin, // 🔥 Exposed secret admin login
+      requestRegistrationOtp, // 🔥 Fixed: This was missing in your code!
       registerUser, 
       syncGoogleUser, 
       logoutUser 

@@ -20,6 +20,12 @@ export default function AuthPage() {
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', otp: '', newPassword: ''
   });
+
+  // 🔥 NEW: State to securely hold the cryptographic hash and expiry during signup
+  const [securityData, setSecurityData] = useState({
+    otpHash: null,
+    expiry: null
+  });
   
   // Status States
   const [loading, setLoading] = useState(false);
@@ -75,7 +81,6 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
-      // Clean email before sending
       const cleanEmail = formData.email.toLowerCase().trim();
       await loginUser(cleanEmail, formData.password, 'shop');
       navigate(from, { replace: true });
@@ -94,8 +99,17 @@ export default function AuthPage() {
     setLoading(true); setError(''); setSuccess('');
     try {
       const cleanEmail = formData.email.toLowerCase().trim();
+      
+      // Requesting OTP via AuthContext
       const res = await requestRegistrationOtp(cleanEmail);
+      
       if (res.success) {
+        // 🔥 CRITICAL UPDATE: Store the hash and expiry received from backend
+        setSecurityData({
+          otpHash: res.otpHash,
+          expiry: res.expiry
+        });
+        
         setSuccess(`Registration OTP sent to ${cleanEmail}.`);
         setView('register-otp');
       }
@@ -116,7 +130,17 @@ export default function AuthPage() {
     try {
       const cleanEmail = formData.email.toLowerCase().trim();
       const cleanOtp = formData.otp.trim();
-      await registerUser(formData.name, cleanEmail, formData.password, cleanOtp);
+      
+      // 🔥 CRITICAL UPDATE: Passing Hash and Expiry to backend for verification
+      await registerUser(
+        formData.name, 
+        cleanEmail, 
+        formData.password, 
+        cleanOtp,
+        securityData.otpHash, // New parameter
+        securityData.expiry   // New parameter
+      );
+      
       navigate(from, { replace: true }); 
     } catch (err) {
       setError(err || 'Registration failed or invalid OTP.');
@@ -126,15 +150,13 @@ export default function AuthPage() {
   };
 
   // ====================================================================
-  // 4. FORGOT PASSWORD PIPELINES (🔥 FULLY OPTIMIZED)
+  // 4. FORGOT PASSWORD PIPELINES
   // ====================================================================
   const handleRequestPasswordOTP = async (e) => {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
-      // Safety Check: Normalize email before API call
       const cleanEmail = formData.email.toLowerCase().trim();
-      
       const res = await axiosInstance.post('/auth/forgot-password', { email: cleanEmail });
       
       if (res.data.success) {
@@ -152,7 +174,6 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true); setError(''); setSuccess('');
     try {
-      // Safety Check: Normalize inputs before API call
       const cleanEmail = formData.email.toLowerCase().trim();
       const cleanOtp = formData.otp.trim();
 
@@ -164,7 +185,6 @@ export default function AuthPage() {
 
       if (res.data.success) {
         setSuccess('Password reset successfully. You can now log in.');
-        // Go back to login after 2 seconds
         setTimeout(() => setView('login'), 2000);
       }
     } catch (err) {

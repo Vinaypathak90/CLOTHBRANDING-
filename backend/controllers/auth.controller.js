@@ -17,25 +17,114 @@ const issueToken = (userPayload, isSecretAdmin = false) => {
 };
 
 // ====================================================================
-// 1. TRADITIONAL EMAIL/PASSWORD REGISTRATION
+// 1. REQUEST SIGNUP OTP (STEP 1) - SECURE & VIA NODEMAILER
 // ====================================================================
-exports.clientRegister = async (req, res, next) => {
+// ====================================================================
+// 2. REQUEST SIGNUP OTP (STEP 1) - WITH HEAVY DEBUGGING
+// ====================================================================
+exports.requestSignupOtp = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    console.log(`\n=============================================`);
+    console.log(`🚀 [SIGNUP PROCESS STARTED]`);
+    console.log(`📧 Frontend se aaya Email: "${req.body.email}"`);
+    
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
+    
+    // Check 1: Kya email khali toh nahi?
+    if (!email) {
+      console.log("❌ ERROR: Email field is empty or undefined!");
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
 
-    // Optional Check: Confirm Password logic is usually handled on the frontend, 
-    // but you can add a check here if frontend sends 'confirmPassword'.
-
+    console.log(`🔍 Checking database for existing user...`);
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', email)
+      .maybeSingle();
+
+    // Check 2: Kya user DB mein already hai?
+    if (existingUser) {
+      console.log("❌ ERROR: User already exists in DB! Blocking request.");
+      return res.status(400).json({ success: false, message: 'This email is already registered. Please log in.' });
+    }
+
+    console.log(`✅ User is new. Generating OTP...`);
+    const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = Date.now() + 5 * 60000; 
+
+    // 🔥 DEVELOPER HACK: Terminal par hi OTP dekh lo!
+    console.log(`🔑 [DEVELOPMENT OTP]: ${plainOtp}`);
+
+    const dataToHash = `${email}.${plainOtp}.${expiry}.${process.env.JWT_SECRET}`;
+    const otpHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+    const emailSubject = "Welcome to Preedarshini - Verification OTP";
+    const emailHtmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #1a1a1a; text-align: center;">Email Verification</h2>
+        <p>Welcome to Preedarshini Couture!</p>
+        <p>Please use the following OTP to complete your registration:</p>
+        <div style="background-color: #f7f4ef; padding: 15px; text-align: center; margin: 20px 0; border-radius: 5px;">
+          <h1 style="margin: 10px 0 0 0; color: #b5862a; letter-spacing: 5px;">${plainOtp}</h1>
+        </div>
+        <p style="font-size: 12px; color: #888;">This OTP is valid for exactly 5 minutes.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #aaa; text-align: center;">Preedarshini Couture / Est. 2024</p>
+      </div>
+    `;
+
+    console.log(`📬 Handing over to Nodemailer...`);
+    await sendEmail(email, emailSubject, emailHtmlBody);
+    
+    console.log(`✅ [SIGNUP PROCESS SUCCESSFUL] Email dispatched!`);
+    console.log(`=============================================\n`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP sent securely to your email.',
+      otpHash: otpHash, 
+      expiry: expiry    
+    });
+  } catch (err) { 
+    console.log(`❌ [CRITICAL ERROR IN SIGNUP]:`, err.message);
+    next(err); 
+  }
+};
+
+// ====================================================================
+// 2. VERIFY OTP & CREATE USER (STEP 2)
+// ====================================================================
+exports.clientRegister = async (req, res, next) => {
+  try {
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
+    const { name, password, otp, otpHash, expiry } = req.body; // Frontend ab ye 5 cheezein bhejega
+
+    // 1. Check if OTP has Expired
+    if (Date.now() > parseInt(expiry)) {
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+    }
+
+    // 2. Verify Cryptographic Signature (Match frontend data with what user typed)
+    const dataToHash = `${email}.${otp.trim()}.${expiry}.${process.env.JWT_SECRET}`;
+    const calculatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+    if (calculatedHash !== otpHash) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP entered.' });
+    }
+
+    // 3. Double Check User Doesn't Exist (Concurrency Safety)
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
       .maybeSingle();
 
     if (existingUser) {
-      return res.status(400).json({ success: false, message: 'Identity footprint already configured within system databases.' });
+      return res.status(400).json({ success: false, message: 'Identity footprint already configured.' });
     }
 
+    // 4. Hash Password & Insert Final User into Database
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
@@ -43,7 +132,7 @@ exports.clientRegister = async (req, res, next) => {
       .from('users')
       .insert([{ 
         name: name.trim(), 
-        email: email.toLowerCase().trim(), 
+        email: email, 
         password_hash: passwordHash, 
         role: 'user' 
       }])
@@ -52,9 +141,18 @@ exports.clientRegister = async (req, res, next) => {
 
     if (error) throw error;
 
+    // 5. Issue Session Token & Login Seamlessly
     const sessionToken = issueToken(newUser);
-    return res.status(201).json({ success: true, token: sessionToken, user: newUser });
-  } catch (err) { next(err); }
+    return res.status(201).json({ 
+      success: true, 
+      token: sessionToken, 
+      user: newUser,
+      message: "Account created successfully."
+    });
+  } catch (err) { 
+    console.error("❌ [REGISTER ERROR]:", err.message);
+    next(err); 
+  }
 };
 
 // ====================================================================
@@ -261,30 +359,54 @@ exports.googleIdentitySync = async (req, res, next) => {
 // ====================================================================
 exports.requestSignupOtp = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : '';
 
-    // Check if email already belongs to a registered user
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', email)
       .maybeSingle();
 
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'This email is already registered. Please log in.' });
     }
 
-    // Generate a fresh 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = Date.now() + 5 * 60000;
 
-    // Send OTP back to frontend so EmailJS can dispatch it
+    const dataToHash = `${email}.${plainOtp}.${expiry}.${process.env.JWT_SECRET}`;
+    const otpHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+    const emailSubject = 'Welcome to Preedarshini - Verification OTP';
+    const emailHtmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #1a1a1a; text-align: center;">Email Verification</h2>
+        <p>Welcome to Preedarshini Couture!</p>
+        <p>Please use the following OTP to complete your registration:</p>
+        <div style="background-color: #f7f4ef; padding: 15px; text-align: center; margin: 20px 0; border-radius: 5px;">
+          <h1 style="margin: 10px 0 0 0; color: #b5862a; letter-spacing: 5px;">${plainOtp}</h1>
+        </div>
+        <p style="font-size: 12px; color: #888;">This OTP is valid for exactly 5 minutes.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #aaa; text-align: center;">Preedarshini Couture / Est. 2024</p>
+      </div>
+    `;
+
+    await sendEmail(email, emailSubject, emailHtmlBody);
+
     return res.status(200).json({
       success: true,
-      message: 'OTP generated for registration.',
-      otp: otpCode 
+      message: 'OTP sent securely to your email.',
+      otpHash,
+      expiry
     });
-  } catch (err) { 
-    next(err); 
+  } catch (err) {
+    console.error('❌ [SIGNUP OTP ERROR]:', err.message);
+    next(err);
   }
 };
 
