@@ -20,8 +20,6 @@ export default function HeroSection() {
   
   const ctaText1 = cmsConfig?.hero_cta_text_1 || "EXPLORE CATALOGUE";
   const ctaLink1 = cmsConfig?.hero_cta_link_1 || "/collections";
-  const ctaText2 = cmsConfig?.hero_cta_text_2 || "THE STUDIO";
-  const ctaLink2 = cmsConfig?.hero_cta_link_2 || "/studio";
 
   const bannerImages = cmsConfig?.hero_images && cmsConfig.hero_images.length > 0
     ? cmsConfig.hero_images
@@ -132,24 +130,13 @@ export default function HeroSection() {
         {/* ====================================================================
             LUXURY FASHION CTA TERMINALS CONTROL CLUSTER (FIXED HOVERS)
            ==================================================================== */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 mt-6 w-full sm:w-auto">
-          
-          {/* Solid Primary Action Node Button (White to Gold) */}
+        <div className="flex justify-center mt-6 w-full">
           <a 
             href={ctaLink1}
             className="w-full sm:w-auto text-[12px] tracking-[0.25em] font-bold uppercase font-body px-10 py-4 border-2 border-white bg-white text-black transition-all duration-400 hover:bg-[#D4AF37] hover:border-[#D4AF37] hover:text-white hover:shadow-[0_10px_30px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 active:translate-y-0 text-center relative group"
           >
             <span className="relative z-10">{ctaText1}</span>
           </a>
-
-          {/* Outline Editorial Secondary Button (Transparent to White) */}
-          <a 
-            href={ctaLink2}
-            className="w-full sm:w-auto text-[12px] tracking-[0.25em] font-bold uppercase font-body px-10 py-4 border-2 border-white/80 text-white bg-transparent transition-all duration-400 hover:bg-white hover:text-black hover:border-white hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:translate-y-0 text-center relative group"
-          >
-            <span className="relative z-10 transition-colors duration-300">{ctaText2}</span>
-          </a>
-
         </div>
       </div>
 
